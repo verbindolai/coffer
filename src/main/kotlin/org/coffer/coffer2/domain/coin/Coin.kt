@@ -4,45 +4,37 @@ import org.coffer.coffer2.domain.MetalType
 import java.math.BigDecimal
 import java.time.ZonedDateTime
 import java.util.Currency
+import java.util.Locale
 
 data class Coin(
-    val id: String,
+    val id: String? = null,
     val title: String,
-    val denomination: BigDecimal,
-    val currency: CoinCurrency,
+    val denomination: BigDecimal?,
+    val currency: Currency,
     val yearOfMinting: YearOfMinting,
-    val issuerCountry: Country,
+    val issuerCountry: Locale,
     val mintMark: MintMark?,
     val grade: CoinGrade?,
     val type: CoinType,
     val notes: String?,
     val numistaId: String?,
-    val shape: CoinShape,
+    val shape: CoinShape = CoinShape.UNKNOWN,
     val weightInGrams: BigDecimal,
-    val purity: BigDecimal,
-    val metalType: MetalType,
-    val rarity: Rarity,
-    val createdAt: ZonedDateTime,
+    val purity: BigDecimal? = null,
+    val metalType: MetalType? = null,
+    val rarity: Rarity? = null,
+    val createdAt: ZonedDateTime = ZonedDateTime.now(),
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
-    val lastPriceUpdate: ZonedDateTime?,
+    val lastPriceUpdate: ZonedDateTime? = null,
 )
 
 data class YearOfMinting(
     val year: Int,
 )
 
-data class Country(
-    val name: String,
-    val code: String,
-)
-
-class CoinCurrency(
-    val code: Currency,
-)
-
 class MintMark(
-    val letter: String,
+    val value: String,
 )
 
 class Rarity(

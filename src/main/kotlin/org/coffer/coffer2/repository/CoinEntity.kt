@@ -7,11 +7,19 @@ import org.coffer.coffer2.domain.coin.Coin
 import java.util.UUID
 
 @Entity
-@Table(name = "metal_quotes")
-data class MetalQuoteEntity(
+@Table(name = "coins")
+data class CoinEntity(
+
     @Id
     private val id: UUID
 ) {
+    fun toCoin(): Coin = Coin(
 
+    )
 
+    companion object {
+        fun fromCoin(coin: Coin): MetalQuoteEntity = MetalQuoteEntity(
+            id = UUID.randomUUID()
+        )
+    }
 }
