@@ -10,7 +10,7 @@ spring:
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog.yaml
-    enabled: true
+    enabled: false
 
   jpa:
     hibernate:
@@ -37,6 +37,11 @@ coffer:
     base-path: ${STORAGE_BASE_PATH:./data/images}
     max-file-size-bytes: 10485760  # 10MB
     allowed-content-types: image/jpeg,image/png,image/webp
+  metal-quotes:
+    update-interval-cron: "0 */5 * * * *"
+    tracked-metal-codes:
+      - XAG
+      - XAU
 
 # Numista API configuration
 numista:
