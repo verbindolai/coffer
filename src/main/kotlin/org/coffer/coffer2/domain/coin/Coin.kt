@@ -8,7 +8,7 @@ import java.util.Currency
 data class Coin(
     val id: String,
     val title: String,
-    val denomination: String,
+    val denomination: BigDecimal,
     val currency: CoinCurrency,
     val yearOfMinting: YearOfMinting,
     val issuerCountry: Country,
