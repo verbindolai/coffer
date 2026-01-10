@@ -8,3 +8,9 @@ databaseChangeLog:
   - include:
       file: 003-metal-quotes.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 004-issue-prices.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 005-coin-images.yaml
+      relativeToChangelogFile: true

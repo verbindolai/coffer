@@ -20,5 +20,5 @@ data class NumistaIssueResponse(
     val mintage: Long?,
     val comment: String?,
 ) {
-    val isProof = comment?.lowercase()?.trim()?.equals("proof") ?: false
+    val isProof = comment?.lowercase()?.trim()?.contains("proof") ?: false
 }

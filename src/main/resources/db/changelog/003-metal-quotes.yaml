@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-metal-quotes-table
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: metal_quotes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: metal_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_per_gram
+                  type: decimal(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quoted_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 003-create-metal-quotes-indexes
+      author: coffer2
+      changes:
+        - createIndex:
+            indexName: idx_metal_quotes_metal_type
+            tableName: metal_quotes
+            columns:
+              - column:
+                  name: metal_type
+        - createIndex:
+            indexName: idx_metal_quotes_quoted_at
+            tableName: metal_quotes
+            columns:
+              - column:
+                  name: quoted_at
+        - createIndex:
+            indexName: idx_metal_quotes_metal_type_quoted_at
+            tableName: metal_quotes
+            columns:
+              - column:
+                  name: metal_type
+              - column:
+                  name: quoted_at
+                  descending: true

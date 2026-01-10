@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-issues-table
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: issues
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: numista_id
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: coin_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: year
+                  type: int
+              - column:
+                  name: mintage
+                  type: bigint
+              - column:
+                  name: mint_letter
+                  type: varchar(10)
+              - column:
+                  name: comment
+                  type: text
+              - column:
+                  name: is_proof
+                  type: boolean
+                  constraints:
+                    nullable: false
+                  defaultValueBoolean: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 002-add-issues-foreign-keys
+      author: coffer2
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: issues
+            baseColumnNames: coin_id
+            constraintName: fk_issues_coin_id
+            referencedTableName: coins
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 002-create-issues-indexes
+      author: coffer2
+      changes:
+        - createIndex:
+            indexName: idx_issues_numista_id
+            tableName: issues
+            columns:
+              - column:
+                  name: numista_id
+        - createIndex:
+            indexName: idx_issues_coin_id
+            tableName: issues
+            columns:
+              - column:
+                  name: coin_id
+        - createIndex:
+            indexName: idx_issues_year
+            tableName: issues
+            columns:
+              - column:
+                  name: year
+        - createIndex:
+            indexName: idx_issues_is_proof
+            tableName: issues
+            columns:
+              - column:
+                  name: is_proof

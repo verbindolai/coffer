@@ -1,0 +1,118 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-coins-table
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: coins
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: denomination
+                  type: decimal(19,4)
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: year_of_minting
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issuer_country_code
+                  type: varchar(2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mint_mark
+                  type: varchar(50)
+              - column:
+                  name: grade
+                  type: varchar(50)
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: numista_id
+                  type: varchar(50)
+              - column:
+                  name: shape
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                  defaultValue: UNKNOWN
+              - column:
+                  name: weight_in_grams
+                  type: decimal(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: purity
+                  type: decimal(19,4)
+              - column:
+                  name: metal_type
+                  type: varchar(50)
+              - column:
+                  name: rarity_score
+                  type: int
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: diameter_in_millimeters
+                  type: decimal(19,4)
+              - column:
+                  name: thickness_in_millimeters
+                  type: decimal(19,4)
+              - column:
+                  name: last_price_update
+                  type: timestamp with time zone
+
+  - changeSet:
+      id: 001-create-coins-indexes
+      author: coffer2
+      changes:
+        - createIndex:
+            indexName: idx_coins_numista_id
+            tableName: coins
+            columns:
+              - column:
+                  name: numista_id
+        - createIndex:
+            indexName: idx_coins_type
+            tableName: coins
+            columns:
+              - column:
+                  name: type
+        - createIndex:
+            indexName: idx_coins_metal_type
+            tableName: coins
+            columns:
+              - column:
+                  name: metal_type
+        - createIndex:
+            indexName: idx_coins_created_at
+            tableName: coins
+            columns:
+              - column:
+                  name: created_at

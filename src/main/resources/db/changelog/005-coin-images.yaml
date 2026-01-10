@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-coin-images-table
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: coin_images
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: coin_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: side
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: storage_key
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: file_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size_in_bytes
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 005-add-coin-images-foreign-keys
+      author: coffer2
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: coin_images
+            baseColumnNames: coin_id
+            constraintName: fk_coin_images_coin_id
+            referencedTableName: coins
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 005-create-coin-images-indexes
+      author: coffer2
+      changes:
+        - createIndex:
+            indexName: idx_coin_images_coin_id
+            tableName: coin_images
+            columns:
+              - column:
+                  name: coin_id
+        - createIndex:
+            indexName: idx_coin_images_side
+            tableName: coin_images
+            columns:
+              - column:
+                  name: side
+        - createIndex:
+            indexName: idx_coin_images_coin_id_side
+            tableName: coin_images
+            unique: true
+            columns:
+              - column:
+                  name: coin_id
+              - column:
+                  name: side

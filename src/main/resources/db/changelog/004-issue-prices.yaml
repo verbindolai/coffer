@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-issue-prices-table
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: issue_prices
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: issue_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: grade
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: decimal(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 004-add-issue-prices-foreign-keys
+      author: coffer2
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: issue_prices
+            baseColumnNames: issue_id
+            constraintName: fk_issue_prices_issue_id
+            referencedTableName: issues
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 004-create-issue-prices-indexes
+      author: coffer2
+      changes:
+        - createIndex:
+            indexName: idx_issue_prices_issue_id
+            tableName: issue_prices
+            columns:
+              - column:
+                  name: issue_id
+        - createIndex:
+            indexName: idx_issue_prices_grade
+            tableName: issue_prices
+            columns:
+              - column:
+                  name: grade
+        - createIndex:
+            indexName: idx_issue_prices_created_at
+            tableName: issue_prices
+            columns:
+              - column:
+                  name: created_at
+        - createIndex:
+            indexName: idx_issue_prices_issue_id_created_at
+            tableName: issue_prices
+            columns:
+              - column:
+                  name: issue_id
+              - column:
+                  name: created_at
+                  descending: true
