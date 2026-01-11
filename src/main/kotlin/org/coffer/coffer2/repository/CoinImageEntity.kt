@@ -2,7 +2,7 @@ package org.coffer.coffer2.repository
 
 import jakarta.persistence.*
 import org.coffer.coffer2.domain.coin.CoinImage
-import org.coffer.coffer2.domain.coin.CoinImageSide
+import org.coffer.coffer2.domain.coin.CoinSide
 import java.time.ZonedDateTime
 import java.util.*
 
@@ -17,7 +17,7 @@ data class CoinImageEntity(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    val side: CoinImageSide,
+    val side: CoinSide,
 
     @Column(nullable = false)
     val storageKey: String,

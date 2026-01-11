@@ -5,4 +5,6 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface CoinImageRepository : JpaRepository<CoinImageEntity, UUID>
+interface CoinImageRepository : JpaRepository<CoinImageEntity, UUID> {
+    fun findByCoinId(coinId: UUID): List<CoinImageEntity>
+}

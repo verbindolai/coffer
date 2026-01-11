@@ -1,6 +1,6 @@
 package org.coffer.coffer2.repository
 
-import org.coffer.coffer2.domain.coin.CoinImageSide
+import org.coffer.coffer2.domain.coin.CoinSide
 import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
 import java.util.*
@@ -15,7 +15,7 @@ class CoinImageEntityTest {
         val originalEntity = CoinImageEntity(
             id = UUID.randomUUID(),
             coinId = UUID.randomUUID(),
-            side = CoinImageSide.OBVERSE,
+            side = CoinSide.OBVERSE,
             storageKey = "images/coin123.jpg",
             fileName = "coin123.jpg",
             contentType = "image/jpeg",
