@@ -38,28 +38,28 @@ data class CoinImageEntity(
     val updatedAt: ZonedDateTime = ZonedDateTime.now()
 ) {
     fun toCoinImage(): CoinImage = CoinImage(
-        id = id.toString(),
-        coinId = coinId.toString(),
+        id = id,
+        coinId = coinId,
         side = side,
         storageKey = storageKey,
         fileName = fileName,
         contentType = contentType,
         sizeInBytes = sizeInBytes,
-        createdAt = createdAt.toString(),
-        updatedAt = updatedAt.toString()
+        createdAt = createdAt,
+        updatedAt = updatedAt
     )
 
     companion object {
         fun fromCoinImage(coinImage: CoinImage): CoinImageEntity = CoinImageEntity(
-            id = UUID.fromString(coinImage.id),
-            coinId = UUID.fromString(coinImage.coinId),
+            id = coinImage.id,
+            coinId = coinImage.coinId,
             side = coinImage.side,
             storageKey = coinImage.storageKey,
             fileName = coinImage.fileName,
             contentType = coinImage.contentType,
             sizeInBytes = coinImage.sizeInBytes,
-            createdAt = ZonedDateTime.parse(coinImage.createdAt),
-            updatedAt = ZonedDateTime.parse(coinImage.updatedAt)
+            createdAt = coinImage.createdAt,
+            updatedAt = coinImage.updatedAt
         )
     }
 }
