@@ -80,7 +80,7 @@ data class CoinEntity(
         denomination = denomination,
         currency = Currency.getInstance(currencyCode),
         yearOfMinting = YearOfMinting(yearOfMinting),
-        issuerCountry = Locale.of(issuerCountryCode),
+        issuerCountry = Locale.of("", issuerCountryCode),
         mintMark = mintMark?.let { MintMark(it) },
         grade = grade,
         type = type,
