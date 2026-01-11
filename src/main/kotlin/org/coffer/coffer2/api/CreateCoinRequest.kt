@@ -73,7 +73,7 @@ data class CreateCoinRequest(
         title = title,
         denomination = denomination,
         yearOfMinting = YearOfMinting(year),
-        issuerCountry = Locale.of(countryCode, ""),
+        issuerCountry = Locale.of("", countryCode),
         mintMark = mintMark?.let { MintMark(it) },
         grade = grade,
         type = coinType,
@@ -82,6 +82,7 @@ data class CreateCoinRequest(
         currency = Currency.getInstance(currency),
         weightInGrams = weightInGrams,
         purity = purity?.let { BigDecimal(it) },
+        metalType = metalType,
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
         rarity = rarityScore?.let { Rarity(it) }
