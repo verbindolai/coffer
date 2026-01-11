@@ -18,7 +18,7 @@ class MetalQuoteEntityTest {
             pricePerGram = BigDecimal("65.50"),
             currencyCode = "USD",
             quotedAt = ZonedDateTime.now(),
-            source = "Swissquote",
+            source = "SWISSQUOTE",
             createdAt = ZonedDateTime.now()
         )
 

@@ -2,13 +2,10 @@ package org.coffer.coffer2.domain.coin
 
 import org.coffer.coffer2.domain.MetalType
 import java.math.BigDecimal
-import java.time.ZonedDateTime
 import java.util.Currency
 import java.util.Locale
-import java.util.UUID
 
-data class Coin(
-    val id: UUID,
+data class CreateCoinCommand(
     val title: String,
     val denomination: BigDecimal?,
     val currency: Currency,
@@ -24,20 +21,26 @@ data class Coin(
     val purity: BigDecimal? = null,
     val metalType: MetalType? = null,
     val rarity: Rarity? = null,
-    val createdAt: ZonedDateTime = ZonedDateTime.now(),
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
-    val lastPriceUpdate: ZonedDateTime? = null,
-)
-
-data class YearOfMinting(
-    val year: Int,
-)
-
-class MintMark(
-    val value: String,
-)
-
-class Rarity(
-    val score: Int,
-)
+) {
+    fun toCoin() = Coin(
+        title = title,
+        denomination = denomination,
+        currency = currency,
+        yearOfMinting = yearOfMinting,
+        issuerCountry = issuerCountry,
+        mintMark = mintMark,
+        grade = grade,
+        type = type,
+        notes = notes,
+        numistaId = numistaId,
+        shape = shape,
+        weightInGrams = weightInGrams,
+        purity = purity,
+        metalType = metalType,
+        rarity = rarity,
+        diameterInMillimeters = diameterInMillimeters,
+        thicknessInMillimeters = thicknessInMillimeters,
+    )
+}

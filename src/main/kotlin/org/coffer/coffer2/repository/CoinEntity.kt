@@ -75,7 +75,7 @@ data class CoinEntity(
     val lastPriceUpdate: ZonedDateTime?
 ) {
     fun toCoin(): Coin = Coin(
-        id = id.toString(),
+        id = id,
         title = title,
         denomination = denomination,
         currency = Currency.getInstance(currencyCode),
@@ -99,7 +99,7 @@ data class CoinEntity(
 
     companion object {
         fun fromCoin(coin: Coin): CoinEntity = CoinEntity(
-            id = coin.id?.let { UUID.fromString(it) } ?: UUID.randomUUID(),
+            id = coin.id,
             title = coin.title,
             denomination = coin.denomination,
             currencyCode = coin.currency.currencyCode,

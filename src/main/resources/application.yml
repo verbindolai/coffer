@@ -3,14 +3,14 @@ spring:
     name: coffer
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coffer}
-    username: ${DB_USERNAME:coffer}
-    password: ${DB_PASSWORD:coffer}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coffer2}
+    username: ${DB_USERNAME:coffer2}
+    password: ${DB_PASSWORD:coffer2}
     driver-class-name: org.postgresql.Driver
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog.yaml
-    enabled: false
+    enabled: true
 
   jpa:
     hibernate:
@@ -38,7 +38,7 @@ coffer:
     max-file-size-bytes: 10485760  # 10MB
     allowed-content-types: image/jpeg,image/png,image/webp
   metal-quotes:
-    update-interval-cron: "0 */5 * * * *"
+    update-interval-cron: "0 */5 * * * 1-5"
     tracked-metal-codes:
       - XAG
       - XAU

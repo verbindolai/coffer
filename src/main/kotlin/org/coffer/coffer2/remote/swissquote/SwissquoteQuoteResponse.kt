@@ -7,6 +7,7 @@ data class SwissquoteQuoteResponse(
     val ts: Long,
 )
 
+// Prices are per ounce
 data class SpreadProfilePrice(
     val spreadProfile: String,
     val bid: BigDecimal,

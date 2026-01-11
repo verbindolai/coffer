@@ -35,7 +35,7 @@ class CreateCoinRequestTest {
         )
 
         // When
-        val coin = request.toCoin()
+        val coin = request.toCommand()
 
         // Then - verify critical conversions
         assertEquals("US", coin.issuerCountry.country) // Bug fix: Locale.of("", countryCode)
@@ -68,7 +68,7 @@ class CreateCoinRequestTest {
         )
 
         // When
-        val coin = request.toCoin()
+        val coin = request.toCommand()
 
         // Then
         assertNull(coin.denomination)

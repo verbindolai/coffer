@@ -27,8 +27,9 @@ data class MetalQuoteEntity(
     @Column(nullable = false)
     val quotedAt: ZonedDateTime,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
-    val source: String,
+    val source: MetalQuoteSource,
 
     @Column(nullable = false)
     val createdAt: ZonedDateTime = ZonedDateTime.now()
@@ -39,7 +40,7 @@ data class MetalQuoteEntity(
         pricePerGram = pricePerGram,
         currency = Currency.getInstance(currencyCode),
         quotedAt = quotedAt,
-        source = MetalQuoteSource.valueOf(source),
+        source = source,
         createdAt = createdAt
     )
 
@@ -50,7 +51,7 @@ data class MetalQuoteEntity(
             pricePerGram = quote.pricePerGram,
             currencyCode = quote.currency.currencyCode,
             quotedAt = quote.quotedAt,
-            source = quote.source.name,
+            source = quote.source,
             createdAt = quote.createdAt
         )
     }

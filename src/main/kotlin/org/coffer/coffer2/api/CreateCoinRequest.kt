@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.coffer.coffer2.domain.MetalType
-import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.CoinType
+import org.coffer.coffer2.domain.coin.CreateCoinCommand
 import org.coffer.coffer2.domain.coin.MintMark
 import org.coffer.coffer2.domain.coin.Rarity
 import org.coffer.coffer2.domain.coin.YearOfMinting
@@ -69,7 +69,7 @@ data class CreateCoinRequest(
     val thicknessInMillimeters: BigDecimal?
 
 ) {
-    fun toCoin() = Coin(
+    fun toCommand() = CreateCoinCommand(
         title = title,
         denomination = denomination,
         yearOfMinting = YearOfMinting(year),
