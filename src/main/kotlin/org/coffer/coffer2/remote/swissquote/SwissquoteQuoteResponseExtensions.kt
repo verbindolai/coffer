@@ -19,7 +19,7 @@ fun List<SwissquoteQuoteResponse>.toMetalQuote(metalType: MetalType): MetalQuote
 
     return MetalQuote(
         metalType = metalType,
-        pricePerGram = troyOunceToGram(firstPrice.midPrice()),
+        pricePerGram = troyOunceToGram(firstPrice.bid),
         currency = Currency.getInstance("EUR"),
         quotedAt = timestamp?.let { Instant.ofEpochMilli(it).atZone(ZoneId.of("UTC")) }
             ?: ZonedDateTime.now(),

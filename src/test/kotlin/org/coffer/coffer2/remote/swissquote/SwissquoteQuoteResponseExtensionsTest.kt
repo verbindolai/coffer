@@ -39,7 +39,9 @@ class SwissquoteQuoteResponseExtensionsTest {
         // Then
         assertNotNull(result)
         assertEquals(MetalType.GOLD, result.metalType)
-        assertEquals(0, BigDecimal("1800.50").compareTo(result.pricePerGram))
+        // bid = 1800.50 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1800.50").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
         assertEquals("EUR", result.currency.currencyCode)
         assertEquals(MetalQuoteSource.SWISSQUOTE, result.source)
 
@@ -158,8 +160,9 @@ class SwissquoteQuoteResponseExtensionsTest {
 
         // Then
         assertNotNull(result)
-        // Should use bid (1800.00), not mid price (1850.00)
-        assertEquals(0, BigDecimal("1800.00").compareTo(result.pricePerGram))
+        // Should use bid (1800.00), not mid price (1850.00), then convert to per gram
+        val expectedPricePerGram = BigDecimal("1800.00").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
     }
 
     @Test
@@ -185,7 +188,9 @@ class SwissquoteQuoteResponseExtensionsTest {
 
         // Then
         assertNotNull(result)
-        assertEquals(0, BigDecimal("1800.123456789").compareTo(result.pricePerGram))
+        // bid = 1800.123456789 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1800.123456789").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
     }
 
     @Test

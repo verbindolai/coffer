@@ -6,6 +6,7 @@ import io.mockk.verify
 import org.coffer.coffer2.IntegrationTestBase
 import org.coffer.coffer2.application.MetalQuotesService
 import org.coffer.coffer2.config.MetalQuotesProperties
+import org.coffer.coffer2.domain.MetalQuoteSource
 import org.coffer.coffer2.domain.MetalType
 import org.coffer.coffer2.remote.swissquote.SpreadProfilePrice
 import org.coffer.coffer2.remote.swissquote.SwissquoteClient
@@ -77,9 +78,11 @@ class MetalQuoteFlowIntegrationTest : IntegrationTestBase() {
 
         assertTrue(goldQuotes.isNotEmpty(), "Expected at least one gold quote to be saved")
         val latestGold = goldQuotes.maxByOrNull { it.createdAt }!!
-        assertEquals(0, BigDecimal("1800.50").compareTo(latestGold.pricePerGram))
+        // bid = 1800.50 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1800.50").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(latestGold.pricePerGram))
         assertEquals("EUR", latestGold.currencyCode)
-        assertEquals("SWISSQUOTE", latestGold.source)
+        assertEquals(MetalQuoteSource.SWISSQUOTE, latestGold.source)
 
         verify(exactly = 1) { swissquoteClient.getMetalPrice("XAU") }
     }
@@ -266,7 +269,9 @@ class MetalQuoteFlowIntegrationTest : IntegrationTestBase() {
         // Verify conversion to domain model and back maintains data
         val domainQuote = quote.toMetalQuote()
         assertEquals(MetalType.PLATINUM, domainQuote.metalType)
-        assertEquals(0, BigDecimal("1050.1234").compareTo(domainQuote.pricePerGram))
+        // bid = 1050.1234 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1050.1234").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(domainQuote.pricePerGram))
         assertEquals("EUR", domainQuote.currency.currencyCode)
     }
 

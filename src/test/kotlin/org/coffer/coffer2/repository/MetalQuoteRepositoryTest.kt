@@ -1,6 +1,7 @@
 package org.coffer.coffer2.repository
 
 import org.coffer.coffer2.IntegrationTestBase
+import org.coffer.coffer2.domain.MetalQuoteSource
 import org.coffer.coffer2.domain.MetalType
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +39,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1800.50"),
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -51,7 +52,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
         assertEquals(MetalType.GOLD, retrieved.get().metalType)
         assertEquals(0, BigDecimal("1800.50").compareTo(retrieved.get().pricePerGram))
         assertEquals("EUR", retrieved.get().currencyCode)
-        assertEquals("SWISSQUOTE", retrieved.get().source)
+        assertEquals(MetalQuoteSource.SWISSQUOTE, retrieved.get().source)
     }
 
     @Test
@@ -63,7 +64,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1800.50"),
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -73,7 +74,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("25.75"),
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -99,7 +100,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1050.1234"), // 4 decimal places
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -122,7 +123,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1800.00"),
             currencyCode = "EUR",
             quotedAt = quotedAt,
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -144,7 +145,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1800.50"),
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 
@@ -172,7 +173,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
                 pricePerGram = BigDecimal("100.00"),
                 currencyCode = "EUR",
                 quotedAt = ZonedDateTime.now(),
-                source = "SWISSQUOTE",
+                source = MetalQuoteSource.SWISSQUOTE,
                 createdAt = ZonedDateTime.now()
             )
         }
@@ -198,7 +199,7 @@ class MetalQuoteRepositoryTest : IntegrationTestBase() {
             pricePerGram = BigDecimal("1800.00"),
             currencyCode = "EUR",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = createdAt
         )
 

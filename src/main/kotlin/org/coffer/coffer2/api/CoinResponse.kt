@@ -35,7 +35,7 @@ data class CoinResponse(
         fun from(coin: Coin): CoinResponse =
             with(coin) {
                 CoinResponse(
-                    id = id!!,
+                    id = id.toString(),
                     title = title,
                     denomination = denomination,
                     currency = currency.currencyCode,

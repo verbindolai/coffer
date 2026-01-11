@@ -1,5 +1,6 @@
 package org.coffer.coffer2.repository
 
+import org.coffer.coffer2.domain.MetalQuoteSource
 import org.coffer.coffer2.domain.MetalType
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -18,7 +19,7 @@ class MetalQuoteEntityTest {
             pricePerGram = BigDecimal("65.50"),
             currencyCode = "USD",
             quotedAt = ZonedDateTime.now(),
-            source = "SWISSQUOTE",
+            source = MetalQuoteSource.SWISSQUOTE,
             createdAt = ZonedDateTime.now()
         )
 

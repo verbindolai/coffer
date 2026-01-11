@@ -4,6 +4,7 @@ import org.coffer.coffer2.domain.MetalType
 import java.math.BigDecimal
 import java.util.Currency
 import java.util.Locale
+import java.util.UUID
 
 data class CreateCoinCommand(
     val title: String,
@@ -25,6 +26,7 @@ data class CreateCoinCommand(
     val thicknessInMillimeters: BigDecimal?,
 ) {
     fun toCoin() = Coin(
+        id = UUID.randomUUID(),
         title = title,
         denomination = denomination,
         currency = currency,

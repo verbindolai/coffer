@@ -45,7 +45,9 @@ class SwissquoteFetcherServiceImplTest {
         // Then
         assertNotNull(result)
         assertEquals(MetalType.GOLD, result.metalType)
-        assertEquals(0, BigDecimal("1800.50").compareTo(result.pricePerGram))
+        // bid = 1800.50 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1800.50").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
         assertEquals("EUR", result.currency.currencyCode)
         assertEquals(MetalQuoteSource.SWISSQUOTE, result.source)
 
@@ -81,7 +83,9 @@ class SwissquoteFetcherServiceImplTest {
         // Then
         assertNotNull(result)
         assertEquals(MetalType.SILVER, result.metalType)
-        assertEquals(0, BigDecimal("25.75").compareTo(result.pricePerGram))
+        // bid = 25.75 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("25.75").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
 
         verify(exactly = 1) { swissquoteClient.getMetalPrice("XAG") }
     }
@@ -115,7 +119,9 @@ class SwissquoteFetcherServiceImplTest {
         // Then
         assertNotNull(result)
         assertEquals(MetalType.PLATINUM, result.metalType)
-        assertEquals(0, BigDecimal("1050.00").compareTo(result.pricePerGram))
+        // bid = 1050.00 per troy ounce, converted to per gram
+        val expectedPricePerGram = BigDecimal("1050.00").divide(BigDecimal("31.1034768"), 8, java.math.RoundingMode.HALF_UP)
+        assertEquals(0, expectedPricePerGram.compareTo(result.pricePerGram))
 
         verify(exactly = 1) { swissquoteClient.getMetalPrice("XPT") }
     }
