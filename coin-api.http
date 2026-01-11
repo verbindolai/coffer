@@ -1,0 +1,168 @@
+###
+# Coffer Coin Collection API
+# Base URL: http://localhost:8080
+#
+# How to use:
+# - In IntelliJ IDEA, click the green "play" button next to each request
+# - Or use Alt+Enter (Windows/Linux) / Cmd+Enter (Mac) to execute
+# - Results will appear in the "Run" tool window at the bottom
+#
+# Prerequisites:
+# 1. Start PostgreSQL: docker-compose up -d postgres
+# 2. Set environment variables:
+#    - DB_HOST=localhost
+#    - DB_PORT=5432
+#    - DB_NAME=coffer2
+#    - DB_USERNAME=coffer2
+#    - DB_PASSWORD=coffer2
+#    - NUMISTA_API_KEY=your-numista-api-key
+# 3. Run application: ./gradlew bootRun
+#
+# API Documentation (when running): http://localhost:8080/swagger-ui.html
+#
+# Note: When creating a coin with a valid numistaId, the system will
+# automatically fetch and store coin images from Numista asynchronously.
+###
+
+### Create Silver Krugerrand from Numista data
+# Based on Numista ID: 143754
+# https://en.numista.com/143754
+#
+# Expected Response (201 Created):
+# {
+#   "id": "uuid-here",
+#   "title": "Silver Krugerrand - 1 Rand",
+#   "denomination": 1,
+#   "currency": "ZAR",
+#   "yearOfMinting": 2021,
+#   "issuerCountry": "South Africa",
+#   "mintMark": null,
+#   "grade": "UNCIRCULATED",
+#   "type": "COMMEMORATIVE_NON_CIRCULATION",
+#   "notes": "Silver Krugerrand bullion coin...",
+#   "numistaId": "143754",
+#   "shape": "UNKNOWN",
+#   "weightInGrams": 31.1,
+#   "purity": 999,
+#   "metalType": "SILVER",
+#   "rarity": null,
+#   "createdAt": "2026-01-11T22:00:00Z",
+#   "diameterInMillimeters": 38.7,
+#   "thicknessInMillimeters": 2.84,
+#   "lastPriceUpdate": null
+# }
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Silver Krugerrand - 1 Rand",
+  "denomination": 1,
+  "year": 2021,
+  "countryCode": "ZA",
+  "currency": "ZAR",
+  "mintMark": null,
+  "grade": "UNCIRCULATED",
+  "coinType": "COMMEMORATIVE_NON_CIRCULATION",
+  "notes": "Silver Krugerrand bullion coin - 50th anniversary commemorative. Depicts a pronking springbok on the South African savannah. Composition: Silver (.999). Minted by South African Mint.",
+  "numistaId": "143754",
+  "metalType": "SILVER",
+  "weightInGrams": 31.1,
+  "purity": 999,
+  "quantity": 1,
+  "diameterInMillimeters": 38.7,
+  "thicknessInMillimeters": 2.84
+}
+
+### Create another Silver Krugerrand with different year
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Silver Krugerrand - 1 Rand (2024)",
+  "denomination": 1,
+  "year": 2024,
+  "countryCode": "ZA",
+  "currency": "ZAR",
+  "mintMark": null,
+  "grade": "PROOF",
+  "coinType": "COMMEMORATIVE_NON_CIRCULATION",
+  "notes": "2024 Silver Krugerrand proof version",
+  "numistaId": "143754",
+  "metalType": "SILVER",
+  "weightInGrams": 31.1,
+  "purity": 999,
+  "quantity": 1,
+  "diameterInMillimeters": 38.7,
+  "thicknessInMillimeters": 2.84
+}
+
+### Create with minimal required fields
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Test Silver Coin",
+  "denomination": 5,
+  "year": 2020,
+  "countryCode": "US",
+  "currency": "USD",
+  "grade": "FINE",
+  "coinType": "STANDARD_CIRCULATION",
+  "weightInGrams": 10.5
+}
+
+### Create Gold Krugerrand (for comparison)
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Gold Krugerrand - 1 oz",
+  "denomination": null,
+  "year": 2022,
+  "countryCode": "ZA",
+  "currency": "ZAR",
+  "mintMark": null,
+  "grade": "UNCIRCULATED",
+  "coinType": "BULLION",
+  "notes": "1 oz Gold Krugerrand bullion coin",
+  "numistaId": "6002",
+  "metalType": "GOLD",
+  "weightInGrams": 33.93,
+  "purity": 917,
+  "quantity": 1,
+  "diameterInMillimeters": 32.77,
+  "thicknessInMillimeters": 2.84
+}
+
+### Invalid request - missing required fields (should fail)
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Incomplete Coin"
+}
+
+### Invalid request - invalid country code (should fail)
+POST http://localhost:8080/api/v1/coins
+Content-Type: application/json
+
+{
+  "title": "Invalid Country Code Coin",
+  "year": 2020,
+  "countryCode": "INVALID",
+  "currency": "USD",
+  "grade": "FINE",
+  "coinType": "STANDARD_CIRCULATION",
+  "weightInGrams": 10.5
+}
+
+### Available Coin Grades
+# GOOD, VERY_GOOD, FINE, VERY_FINE, EXTREMELY_FINE, ABOUT_UNCIRCULATED, UNCIRCULATED, PROOF
+
+### Available Coin Types
+# BULLION, COMMEMORATIVE_CIRCULATION, STANDARD_CIRCULATION, COMMEMORATIVE_NON_CIRCULATION, OTHER
+
+### Available Metal Types
+# SILVER, GOLD, PLATINUM, NICKEL
+
+###

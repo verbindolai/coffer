@@ -1,5 +1,6 @@
 package org.coffer.coffer2.application
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
 import org.coffer.coffer2.domain.coin.CoinImage
@@ -21,9 +22,14 @@ class CoinService(
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val imageStorageService: ImageStorageService
 ) {
+
+    private val logger = KotlinLogging.logger {}
+
+    @Transactional
     fun createCoin(command: CreateCoinCommand): Coin {
         val coin = command.toCoin()
         val savedCoin = coinRepository.save(coin)
+        logger.info { "Coin created with id ${savedCoin.id}" }
         applicationEventPublisher.publishEvent(CoinCreatedEvent(savedCoin.id, savedCoin.numistaId))
         return savedCoin
     }
