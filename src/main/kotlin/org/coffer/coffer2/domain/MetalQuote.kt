@@ -10,6 +10,6 @@ data class MetalQuote(
     val pricePerGram: BigDecimal,
     val currency: Currency,
     val quotedAt: ZonedDateTime,
-    val source: String,
+    val source: MetalQuoteSource,
     val createdAt: ZonedDateTime = ZonedDateTime.now()
 )
