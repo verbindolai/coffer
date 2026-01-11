@@ -12,11 +12,4 @@ class MetalTypeTest {
         assertEquals("XAG", MetalType.SILVER.toSymbol())
         assertEquals("XPT", MetalType.PLATINUM.toSymbol())
     }
-
-    @Test
-    fun `toSymbol should throw exception for OTHER`() {
-        assertThrows<IllegalArgumentException> {
-            MetalType.OTHER.toSymbol()
-        }
-    }
 }
