@@ -2,6 +2,7 @@ package org.coffer.coffer2.repository
 
 import jakarta.persistence.*
 import org.coffer.coffer2.domain.MetalQuote
+import org.coffer.coffer2.domain.MetalQuoteSource
 import org.coffer.coffer2.domain.MetalType
 import java.math.BigDecimal
 import java.time.ZonedDateTime
@@ -38,7 +39,7 @@ data class MetalQuoteEntity(
         pricePerGram = pricePerGram,
         currency = Currency.getInstance(currencyCode),
         quotedAt = quotedAt,
-        source = source,
+        source = MetalQuoteSource.valueOf(source),
         createdAt = createdAt
     )
 
@@ -49,7 +50,7 @@ data class MetalQuoteEntity(
             pricePerGram = quote.pricePerGram,
             currencyCode = quote.currency.currencyCode,
             quotedAt = quote.quotedAt,
-            source = quote.source,
+            source = quote.source.name,
             createdAt = quote.createdAt
         )
     }

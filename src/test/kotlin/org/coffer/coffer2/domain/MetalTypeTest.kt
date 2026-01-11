@@ -7,16 +7,16 @@ import kotlin.test.assertEquals
 class MetalTypeTest {
 
     @Test
-    fun `toSwissquoteSymbol should return correct symbols`() {
-        assertEquals("XAU", MetalType.GOLD.toSwissquoteSymbol())
-        assertEquals("XAG", MetalType.SILVER.toSwissquoteSymbol())
-        assertEquals("XPT", MetalType.PLATINUM.toSwissquoteSymbol())
+    fun `toSymbol should return correct symbols`() {
+        assertEquals("XAU", MetalType.GOLD.toSymbol())
+        assertEquals("XAG", MetalType.SILVER.toSymbol())
+        assertEquals("XPT", MetalType.PLATINUM.toSymbol())
     }
 
     @Test
-    fun `toSwissquoteSymbol should throw exception for OTHER`() {
+    fun `toSymbol should throw exception for OTHER`() {
         assertThrows<IllegalArgumentException> {
-            MetalType.OTHER.toSwissquoteSymbol()
+            MetalType.OTHER.toSymbol()
         }
     }
 }

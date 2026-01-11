@@ -4,16 +4,26 @@ enum class MetalType {
     SILVER,
     GOLD,
     PLATINUM,
-    NICKEL,
-    OTHER,
-    ;
+    NICKEL;
 
-    fun toSwissquoteSymbol(): String =
+    fun toSymbol(): String =
         when (this) {
             GOLD -> "XAU"
             SILVER -> "XAG"
             PLATINUM -> "XPT"
             NICKEL -> "XNIK"
-            OTHER -> throw IllegalArgumentException("MetalType $this is not supported by Swissquote")
         }
+
+    companion object {
+        fun fromSymbol(symbol: String): MetalType =
+            when (symbol) {
+                "XAU" -> GOLD
+                "XAG" -> SILVER
+                "XPT" -> PLATINUM
+                "XNIK" -> NICKEL
+                else -> {
+                    throw IllegalArgumentException("Unknown metal symbol: $symbol")
+                }
+            }
+    }
 }

@@ -8,15 +8,15 @@ import org.coffer.coffer2.remote.swissquote.toMetalQuote
 import org.springframework.stereotype.Service
 
 @Service
-class SwissquoteMetalQuotesServiceImpl(
+class SwissquoteFetcherServiceImpl(
     private val swissquoteClient: SwissquoteClient
-): MetalQuotesService {
+): MetalQuotesFetcherService {
 
     private val logger = KotlinLogging.logger {}
 
     override fun getMetalQuote(metalType: MetalType): MetalQuote? {
         logger.info { "Getting metal quote for metal type $metalType" }
-        return swissquoteClient.getMetalPrice(metalType.toSwissquoteSymbol()).toMetalQuote(metalType)
+        return swissquoteClient.getMetalPrice(metalType.toSymbol()).toMetalQuote(metalType)
     }
 
 }
