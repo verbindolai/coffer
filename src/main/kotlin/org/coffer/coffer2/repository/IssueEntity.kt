@@ -1,7 +1,7 @@
 package org.coffer.coffer2.repository
 
 import jakarta.persistence.*
-import org.coffer.coffer2.domain.coin.Issue
+import org.coffer.coffer2.domain.coin. Issue
 import java.time.ZonedDateTime
 import java.util.*
 
@@ -11,11 +11,8 @@ data class IssueEntity(
     @Id
     val id: UUID = UUID.randomUUID(),
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, unique = true)
     val numistaId: String,
-
-    @Column(nullable = false)
-    val coinId: UUID,
 
     @Column
     val year: Int?,
@@ -36,9 +33,8 @@ data class IssueEntity(
     val createdAt: ZonedDateTime = ZonedDateTime.now()
 ) {
     fun toIssue(): Issue = Issue(
-        id = id.toString(),
+        id = id,
         numistaId = numistaId,
-        coinId = coinId.toString(),
         year = year,
         mintage = mintage,
         mintLetter = mintLetter,
@@ -49,9 +45,8 @@ data class IssueEntity(
 
     companion object {
         fun fromIssue(issue: Issue): IssueEntity = IssueEntity(
-            id = issue.id?.let { UUID.fromString(it) } ?: UUID.randomUUID(),
+            id = issue.id ?: UUID.randomUUID(),
             numistaId = issue.numistaId,
-            coinId = UUID.fromString(issue.coinId),
             year = issue.year,
             mintage = issue.mintage,
             mintLetter = issue.mintLetter,

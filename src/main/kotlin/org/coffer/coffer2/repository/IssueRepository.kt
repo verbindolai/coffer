@@ -5,4 +5,7 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface IssueRepository : JpaRepository<IssueEntity, UUID>
+interface IssueRepository : JpaRepository<IssueEntity, UUID> {
+    fun findByNumistaId(numistaId: String): IssueEntity?
+    fun existsByNumistaId(numistaId: String): Boolean
+}
