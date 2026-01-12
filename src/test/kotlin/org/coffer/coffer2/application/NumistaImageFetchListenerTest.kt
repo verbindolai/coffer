@@ -3,6 +3,8 @@ package org.coffer.coffer2.application
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.coffer.coffer2.application.coinimage.CoinImageFetchService
+import org.coffer.coffer2.application.coinimage.NumistaImageFetchListener
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
 import java.util.UUID
 import kotlin.test.Test

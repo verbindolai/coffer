@@ -1,5 +1,7 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.shared
 
+import org.coffer.coffer2.application.shared.ImageStorageService
+import org.coffer.coffer2.application.shared.StorageProperties
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.InputStream
@@ -9,8 +11,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.io.normalize
-import kotlin.text.contains
 
 @Service
 class FileSystemImageStorage(

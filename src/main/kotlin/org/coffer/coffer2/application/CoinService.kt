@@ -1,6 +1,8 @@
 package org.coffer.coffer2.application
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.coffer.coffer2.application.coinimage.CoinImageRepositoryAdapter
+import org.coffer.coffer2.application.shared.ImageStorageService
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
 import org.coffer.coffer2.domain.coin.CoinImage
@@ -11,9 +13,7 @@ import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.ZonedDateTime
 import java.util.UUID
-import kotlin.io.inputStream
 
 @Service
 class CoinService(

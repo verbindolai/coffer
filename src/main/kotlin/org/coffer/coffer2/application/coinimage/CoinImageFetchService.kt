@@ -1,8 +1,10 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.coinimage
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.coffer.coffer2.application.CoinService
 import org.coffer.coffer2.domain.coin.CoinSide
 import org.coffer.coffer2.remote.numista.NumistaClient
+import org.coffer.coffer2.remote.numista.NumistaTypeResponse
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -23,11 +25,6 @@ class CoinImageFetchService(
      * @return true if at least one image was successfully fetched, false otherwise
      */
     fun fetchMissingImagesFromNumista(coinId: UUID, numistaId: String): Boolean {
-        if (numistaId.isBlank()) {
-            logger.info { "No Numista ID for coin $coinId, skipping image fetch" }
-            return false
-        }
-
         logger.info { "Processing image fetch for coin $coinId with Numista ID $numistaId" }
 
         val existingSides = coinService.getCoinImageSides(coinId)
@@ -57,7 +54,7 @@ class CoinImageFetchService(
 
     private fun determineSidesToFetch(
         existingSides: List<CoinSide>,
-        typeInfo: org.coffer.coffer2.remote.numista.NumistaTypeResponse
+        typeInfo: NumistaTypeResponse
     ): List<Pair<CoinSide, String>> {
         val sidesToFetch = mutableListOf<Pair<CoinSide, String>>()
 

@@ -1,4 +1,4 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.shared
 
 import java.io.InputStream
 import java.nio.file.Path

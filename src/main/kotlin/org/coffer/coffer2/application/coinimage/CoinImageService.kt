@@ -1,4 +1,4 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.coinimage
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.domain.coin.CoinSide

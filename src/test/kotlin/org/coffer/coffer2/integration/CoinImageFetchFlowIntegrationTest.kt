@@ -6,7 +6,7 @@ import io.mockk.verify
 import jakarta.persistence.EntityManager
 import org.coffer.coffer2.IntegrationTestBase
 import org.coffer.coffer2.application.CoinService
-import org.coffer.coffer2.application.ImageStorageService
+import org.coffer.coffer2.application.shared.ImageStorageService
 import org.coffer.coffer2.domain.MetalType
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.CoinSide

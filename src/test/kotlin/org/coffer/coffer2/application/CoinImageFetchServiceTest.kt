@@ -3,6 +3,8 @@ package org.coffer.coffer2.application
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.coffer.coffer2.application.coinimage.CoinImageFetchService
+import org.coffer.coffer2.application.coinimage.CoinImageService
 import org.coffer.coffer2.domain.coin.CoinSide
 import org.coffer.coffer2.domain.coinimage.ImageUploadCommand
 import org.coffer.coffer2.remote.numista.NumistaClient

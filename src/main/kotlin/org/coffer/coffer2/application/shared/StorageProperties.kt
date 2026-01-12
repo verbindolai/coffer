@@ -1,4 +1,4 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.shared
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component

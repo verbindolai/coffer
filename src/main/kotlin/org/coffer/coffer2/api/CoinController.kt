@@ -20,10 +20,10 @@ class CoinController(
 
     @PostMapping
     @Operation(summary = "Create a new coin", description = "Add a new coin to the collection")
-    fun createCoin(@Valid @RequestBody request: CreateCoinRequest): ResponseEntity<CoinResponse> {
+    fun createCoin(@Valid @RequestBody request: CreateCoinRequest): CoinResponse {
         val command = request.toCommand()
         val coin = coinService.createCoin(command)
-        return ResponseEntity.status(HttpStatus.CREATED).body(CoinResponse.from(coin))
+        return CoinResponse.from(coin)
     }
 
 

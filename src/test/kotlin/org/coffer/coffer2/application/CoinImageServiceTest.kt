@@ -1,5 +1,6 @@
 package org.coffer.coffer2.application
 
+import org.coffer.coffer2.application.coinimage.CoinImageService
 import org.coffer.coffer2.domain.coin.CoinSide
 import java.util.UUID
 import kotlin.test.Test

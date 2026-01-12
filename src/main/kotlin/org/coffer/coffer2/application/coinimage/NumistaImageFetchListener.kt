@@ -1,4 +1,4 @@
-package org.coffer.coffer2.application
+package org.coffer.coffer2.application.coinimage
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
@@ -9,11 +9,6 @@ import org.springframework.transaction.event.TransactionalEventListener
 
 /**
  * Event listener that triggers automatic image fetching from Numista when a coin is created.
- *
- * This is a thin infrastructure component that:
- * - Listens to CoinCreatedEvent asynchronously after transaction commit
- * - Delegates to CoinImageFetchService for business logic
- * - Handles top-level error logging
  */
 @Component
 class NumistaImageFetchListener(

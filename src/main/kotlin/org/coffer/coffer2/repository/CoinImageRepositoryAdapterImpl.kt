@@ -1,6 +1,6 @@
 package org.coffer.coffer2.repository
 
-import org.coffer.coffer2.application.CoinImageRepositoryAdapter
+import org.coffer.coffer2.application.coinimage.CoinImageRepositoryAdapter
 import org.coffer.coffer2.domain.coin.CoinImage
 import org.springframework.stereotype.Component
 import java.util.UUID
