@@ -25,8 +25,6 @@ class IssueFetchService(
      */
     @Transactional
     fun fetchIssuesFromNumista(coinId: UUID, numistaId: String): Boolean {
-        logger.info { "Processing issue fetch for coin $coinId with coin type Numista ID $numistaId" }
-
         // Check if this coin already has linked issues
         if (issueRepositoryAdapter.coinHasIssues(coinId)) {
             logger.info { "Coin $coinId already has linked issues, skipping" }
