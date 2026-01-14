@@ -1,6 +1,7 @@
 package org.coffer.coffer2.application
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.coffer.coffer2.api.CoinSearchQuery
 import org.coffer.coffer2.application.coinimage.CoinImageRepositoryAdapter
 import org.coffer.coffer2.application.shared.ImageStorageService
 import org.coffer.coffer2.domain.coin.Coin
@@ -8,9 +9,12 @@ import org.coffer.coffer2.domain.coin.CoinCreatedEvent
 import org.coffer.coffer2.domain.coin.CoinImage
 import org.coffer.coffer2.domain.coin.CoinSide
 import org.coffer.coffer2.domain.coin.CreateCoinCommand
+import org.coffer.coffer2.domain.coin.UpdateCoinCommand
 import org.coffer.coffer2.domain.coinimage.ImageUploadCommand
 import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -32,6 +36,36 @@ class CoinService(
         logger.info { "Coin created with id ${savedCoin.id}" }
         applicationEventPublisher.publishEvent(CoinCreatedEvent(savedCoin.id, savedCoin.numistaId))
         return savedCoin
+    }
+
+    @Transactional(readOnly = true)
+    fun getCoinById(id: UUID): Coin? {
+        return coinRepository.findById(id)
+    }
+
+    @Transactional
+    fun updateCoin(command: UpdateCoinCommand): Coin {
+        val existingCoin = coinRepository.findById(command.id)
+            ?: throw CoinNotFoundException(command.id)
+
+        val updatedCoin = command.toCoin(existingCoin)
+        val savedCoin = coinRepository.save(updatedCoin)
+        logger.info { "Coin updated with id ${savedCoin.id}" }
+        return savedCoin
+    }
+
+    @Transactional
+    fun deleteCoin(id: UUID) {
+        if (!coinRepository.existsById(id)) {
+            throw CoinNotFoundException(id)
+        }
+        coinRepository.deleteById(id)
+        logger.info { "Coin deleted with id $id" }
+    }
+
+    @Transactional(readOnly = true)
+    fun searchCoins(query: CoinSearchQuery, pageable: Pageable): Page<Coin> {
+        return coinRepository.search(query, pageable)
     }
 
     @Transactional(readOnly = true)
