@@ -74,6 +74,29 @@ class CoinService(
         return images.map { it.side }.distinct()
     }
 
+    @Transactional(readOnly = true)
+    fun getImagesForCoin(coinId: UUID): List<CoinImage> {
+        if (!coinRepository.existsById(coinId)) {
+            throw CoinNotFoundException(coinId)
+        }
+        return coinImageRepository.findByCoinId(coinId)
+    }
+
+    @Transactional(readOnly = true)
+    fun getCoinImage(coinId: UUID, imageId: UUID): CoinImage? {
+        if (!coinRepository.existsById(coinId)) {
+            throw CoinNotFoundException(coinId)
+        }
+        return coinImageRepository.findByCoinIdAndImageId(coinId, imageId)
+    }
+
+    @Transactional(readOnly = true)
+    fun getImageContent(coinId: UUID, imageId: UUID): Pair<CoinImage, java.nio.file.Path>? {
+        val image = getCoinImage(coinId, imageId) ?: return null
+        val path = imageStorageService.retrieve(image.storageKey)
+        return image to path
+    }
+
     @Transactional
     fun addImage(command: ImageUploadCommand): CoinImage {
         val coin = coinRepository.findById(command.coinId) ?: throw CoinNotFoundException(command.coinId)

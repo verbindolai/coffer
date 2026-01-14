@@ -124,4 +124,42 @@ class CoinController(
         return ResponseEntity.ok(coins.map { CoinResponse.from(it) })
     }
 
+    @GetMapping("/{coinId}/images")
+    @Operation(summary = "Get coin images", description = "Retrieve all images for a specific coin")
+    fun getCoinImages(@PathVariable coinId: UUID): ResponseEntity<List<CoinImageResponse>> {
+        val images = coinService.getImagesForCoin(coinId)
+        return ResponseEntity.ok(images.map { CoinImageResponse.from(it) })
+    }
+
+    @GetMapping("/{coinId}/images/{imageId}")
+    @Operation(summary = "Get coin image metadata", description = "Retrieve metadata for a specific coin image")
+    fun getCoinImage(
+        @PathVariable coinId: UUID,
+        @PathVariable imageId: UUID
+    ): ResponseEntity<CoinImageResponse> {
+        val image = coinService.getCoinImage(coinId, imageId)
+            ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(CoinImageResponse.from(image))
+    }
+
+    @GetMapping("/{coinId}/images/{imageId}/content")
+    @Operation(summary = "Get coin image content", description = "Download the actual image file for a specific coin image")
+    fun getCoinImageContent(
+        @PathVariable coinId: UUID,
+        @PathVariable imageId: UUID
+    ): ResponseEntity<org.springframework.core.io.Resource> {
+        val (image, path) = coinService.getImageContent(coinId, imageId)
+            ?: return ResponseEntity.notFound().build()
+
+        val resource = org.springframework.core.io.UrlResource(path.toUri())
+
+        return ResponseEntity.ok()
+            .contentType(org.springframework.http.MediaType.parseMediaType(image.contentType))
+            .header(
+                org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                "inline; filename=\"${image.fileName}\""
+            )
+            .body(resource)
+    }
+
 }

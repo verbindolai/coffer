@@ -7,4 +7,5 @@ import java.util.*
 @Repository
 interface CoinImageRepository : JpaRepository<CoinImageEntity, UUID> {
     fun findByCoinId(coinId: UUID): List<CoinImageEntity>
+    fun findByCoinIdAndId(coinId: UUID, id: UUID): CoinImageEntity?
 }
