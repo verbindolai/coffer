@@ -1,6 +1,7 @@
 package org.coffer.coffer2.application.issue
 
 import org.coffer.coffer2.domain.coin.Issue
+import java.time.ZonedDateTime
 import java.util.UUID
 
 /**
@@ -72,4 +73,13 @@ interface IssueRepositoryAdapter {
      * @return List of issues, empty if no coin with this type has issues yet
      */
     fun findIssuesByNumistaId(numistaId: String): List<Issue>
+
+    /**
+     * Updates the lastPriceFetchAttempt timestamp for an issue.
+     * Used to track when we last tried to fetch prices from Numista.
+     *
+     * @param issueId The issue UUID
+     * @param timestamp The timestamp to set
+     */
+    fun updateLastPriceFetchAttempt(issueId: UUID, timestamp: ZonedDateTime)
 }

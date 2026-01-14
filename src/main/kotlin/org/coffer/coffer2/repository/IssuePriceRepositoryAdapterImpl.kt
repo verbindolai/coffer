@@ -4,7 +4,6 @@ import org.coffer.coffer2.application.issueprice.IssuePriceRepositoryAdapter
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.IssuePrice
 import org.springframework.stereotype.Component
-import java.time.ZonedDateTime
 import java.util.UUID
 
 @Component
@@ -30,9 +29,5 @@ class IssuePriceRepositoryAdapterImpl(
 
     override fun findLatestByIssueIdAndGrade(issueId: UUID, grade: CoinGrade): IssuePrice? {
         return issuePriceRepository.findLatestByIssueIdAndGrade(issueId, grade)?.toIssuePrice()
-    }
-
-    override fun hasRecentPrices(issueId: UUID, since: ZonedDateTime): Boolean {
-        return issuePriceRepository.findByIssueIdAndCreatedAtAfter(issueId, since).isNotEmpty()
     }
 }

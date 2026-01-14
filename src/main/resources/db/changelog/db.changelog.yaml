@@ -20,3 +20,6 @@ databaseChangeLog:
   - include:
       file: 007-remove-last-price-update.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 008-add-issue-last-price-fetch-attempt.yaml
+      relativeToChangelogFile: true

@@ -4,17 +4,10 @@ import org.coffer.coffer2.domain.coin.CoinGrade
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
-import java.time.ZonedDateTime
 import java.util.*
 
 @Repository
 interface IssuePriceRepository : JpaRepository<IssuePriceEntity, UUID> {
-    /**
-     * Finds all prices for a given issue that were created after the specified date.
-     * Used to check if prices were already fetched today.
-     */
-    fun findByIssueIdAndCreatedAtAfter(issueId: UUID, since: ZonedDateTime): List<IssuePriceEntity>
-
     /**
      * Finds all prices for a given issue.
      */

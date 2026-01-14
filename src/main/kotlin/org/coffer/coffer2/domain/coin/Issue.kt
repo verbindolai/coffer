@@ -12,4 +12,5 @@ data class Issue(
     val comment: String?,
     val isProof: Boolean = false,
     val createdAt: ZonedDateTime = ZonedDateTime.now(),
+    val lastPriceFetchAttempt: ZonedDateTime? = null,
 )

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-add-last-price-fetch-attempt-to-issues
+      author: coffer2
+      changes:
+        - addColumn:
+            tableName: issues
+            columns:
+              - column:
+                  name: last_price_fetch_attempt
+                  type: timestamp with time zone
+      rollback:
+        - dropColumn:
+            tableName: issues
+            columnName: last_price_fetch_attempt

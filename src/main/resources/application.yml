@@ -43,7 +43,7 @@ coffer:
       - XAG
       - XAU
   issue-prices:
-    update-interval-cron: "0 0 2 * * *"  # Daily at 2 AM
+    update-interval-cron: "0 */5 * * * 1-5"  # Daily at 2 AM
     batch-size: 50
     rate-limit-delay-ms: 100
     max-issues-per-coin: 10

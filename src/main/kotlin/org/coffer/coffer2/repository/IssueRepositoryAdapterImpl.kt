@@ -2,7 +2,9 @@ package org.coffer.coffer2.repository
 
 import org.coffer.coffer2.application.issue.IssueRepositoryAdapter
 import org.coffer.coffer2.domain.coin.Issue
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
+import java.time.ZonedDateTime
 import java.util.UUID
 
 @Component
@@ -52,5 +54,11 @@ class IssueRepositoryAdapterImpl(
             return emptyList()
         }
         return issueRepository.findAllById(issueIds).map { it.toIssue() }
+    }
+
+    override fun updateLastPriceFetchAttempt(issueId: UUID, timestamp: ZonedDateTime) {
+        val issue = issueRepository.findByIdOrNull(issueId) ?: return
+        val updatedIssue = issue.copy(lastPriceFetchAttempt = timestamp)
+        issueRepository.save(updatedIssue)
     }
 }

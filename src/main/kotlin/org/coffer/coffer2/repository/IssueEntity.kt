@@ -30,7 +30,10 @@ data class IssueEntity(
     val isProof: Boolean = false,
 
     @Column(nullable = false)
-    val createdAt: ZonedDateTime = ZonedDateTime.now()
+    val createdAt: ZonedDateTime = ZonedDateTime.now(),
+
+    @Column
+    val lastPriceFetchAttempt: ZonedDateTime? = null
 ) {
     fun toIssue(): Issue = Issue(
         id = id,
@@ -40,7 +43,8 @@ data class IssueEntity(
         mintLetter = mintLetter,
         comment = comment,
         isProof = isProof,
-        createdAt = createdAt
+        createdAt = createdAt,
+        lastPriceFetchAttempt = lastPriceFetchAttempt
     )
 
     companion object {
@@ -52,7 +56,8 @@ data class IssueEntity(
             mintLetter = issue.mintLetter,
             comment = issue.comment,
             isProof = issue.isProof,
-            createdAt = issue.createdAt
+            createdAt = issue.createdAt,
+            lastPriceFetchAttempt = issue.lastPriceFetchAttempt
         )
     }
 }

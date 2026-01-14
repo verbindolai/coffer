@@ -2,7 +2,6 @@ package org.coffer.coffer2.application.issueprice
 
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.IssuePrice
-import java.time.ZonedDateTime
 import java.util.UUID
 
 /**
@@ -50,14 +49,4 @@ interface IssuePriceRepositoryAdapter {
      * @return The latest issue price, or null if not found
      */
     fun findLatestByIssueIdAndGrade(issueId: UUID, grade: CoinGrade): IssuePrice?
-
-    /**
-     * Checks if prices have been fetched for an issue since the specified time.
-     * Used to implement the "once-per-day" update limit.
-     *
-     * @param issueId The UUID of the issue
-     * @param since The timestamp to check from
-     * @return true if prices exist since the specified time, false otherwise
-     */
-    fun hasRecentPrices(issueId: UUID, since: ZonedDateTime): Boolean
 }

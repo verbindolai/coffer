@@ -29,19 +29,6 @@ class IssuePriceService(
         updatePricesForCoins(allCoins)
     }
 
-    /**
-     * Updates prices for a list of coins with deduplication and rate limiting.
-     * Groups coins by Numista ID to avoid redundant lookups, and processes each coin
-     * to match it to its relevant issues independently.
-     *
-     * Key features:
-     * - Deduplicates by Numista coin type
-     * - Within-run deduplication: if multiple coins map to the same issue, fetch prices only once
-     * - Batch processing with configurable delays
-     * - Rate limit handling (stops on 429 errors)
-     *
-     * @param coins The list of coins to update
-     */
     private fun updatePricesForCoins(coins: List<Coin>) {
         if (coins.isEmpty()) {
             logger.info { "No coins to process" }

@@ -10,6 +10,7 @@ import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.Issue
 import org.coffer.coffer2.domain.coin.IssuePrice
 import org.coffer.coffer2.remote.numista.NumistaClient
+import org.coffer.coffer2.remote.numista.NumistaPriceResponse
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -29,7 +30,9 @@ import java.util.*
  * - If coin has grade → stores only prices for that specific grade
  * - If coin has NO grade → stores prices for ALL grades
  *
- * This ensures optimal price coverage when coin data is incomplete.
+ * Deduplication Strategy:
+ * - lastPriceFetchAttempt: Prevents fetching same issue across multiple days (once-per-day)
+ * - processedIssueIds: Prevents fetching same issue within a transaction (batch efficiency)
  */
 @Service
 class IssuePriceFetchService(
@@ -42,46 +45,31 @@ class IssuePriceFetchService(
     private val logger = KotlinLogging.logger {}
 
     /**
-     * Fetches prices for all relevant issues of a coin based on its available data.
-     *
-     * Selection Strategy:
-     * - Filters issues by year (mandatory)
-     * - If coin has mintMark → uses only matching mintLetter issues
-     * - If coin has NO mintMark → uses ALL mint variations for that year (up to configured limit)
-     *
-     * Storage Strategy:
-     * - If coin has grade → stores only that grade's prices
-     * - If coin has NO grade → stores all grades' prices
-     *
-     * Implements once-per-day update limit by checking if prices were already fetched today.
+     * Fetches prices for all relevant issues of a coin.
      *
      * @param coinId The UUID of the coin
-     * @param processedIssueIds Set of issue IDs already processed in current run (for deduplication)
-     * @return true if prices were successfully fetched and saved for at least one issue, false otherwise
+     * @param processedIssueIds Optional set for within-transaction deduplication
+     * @return true if processing completed successfully (even if no prices found)
      * @throws RateLimitException if Numista API rate limit is exceeded
      */
     @Transactional
-    fun fetchPricesForCoin(coinId: UUID, processedIssueIds: MutableSet<UUID> = mutableSetOf()): Boolean {
+    fun fetchPricesForCoin(coinId: UUID, processedIssueIds: MutableSet<UUID>? = null): Boolean {
         try {
+            // Load and validate coin
             val coin = coinRepositoryAdapter.findById(coinId)
             if (coin == null || coin.numistaId == null) {
                 logger.warn { "Coin $coinId not found or has no Numista ID" }
                 return false
             }
 
-            // Get all issues for this coin type
+            // Load and select relevant issues
             val issues = issueRepositoryAdapter.findIssuesByNumistaId(coin.numistaId)
             if (issues.isEmpty()) {
                 logger.info { "No issues found for coin $coinId (type: ${coin.numistaId})" }
                 return false
             }
 
-            // Select all relevant matching issues (up to configured limit)
-            val selectedIssues = selectRelevantIssues(
-                coin,
-                issues,
-                maxIssues = issuePriceProperties.maxIssuesPerCoin
-            )
+            val selectedIssues = selectRelevantIssues(coin, issues, issuePriceProperties.maxIssuesPerCoin)
             if (selectedIssues.isEmpty()) {
                 logger.warn { "Could not select any matching issues for coin $coinId" }
                 return false
@@ -89,83 +77,23 @@ class IssuePriceFetchService(
 
             logger.info { "Selected ${selectedIssues.size} relevant issue(s) for coin $coinId" }
 
-            var anySuccess = false
-
-            // Fetch prices for each selected issue
+            // Process each selected issue
             selectedIssues.forEach { issue ->
-                if (issue.id == null) {
-                    logger.warn { "Issue has no ID, skipping" }
+                if (shouldSkipIssue(issue, processedIssueIds)) {
                     return@forEach
                 }
 
-                // Skip if already processed in this run
-                if (issue.id in processedIssueIds) {
-                    logger.debug { "Issue ${issue.id} already processed in this run, skipping" }
-                    return@forEach
+                try {
+                    processIssue(coin, issue)
+                    processedIssueIds?.add(issue.id!!)
+                } catch (e: RateLimitException) {
+                    throw e // Propagate to stop batch processing
                 }
-
-                // Check if prices already fetched today (once-per-day limit)
-                if (!shouldFetchPrices(issue.id)) {
-                    logger.debug { "Prices for issue ${issue.id} already fetched today, skipping" }
-                    processedIssueIds.add(issue.id)
-                    return@forEach
-                }
-
-                // Fetch prices from Numista
-                val pricesResponse = try {
-                    numistaClient.getPricesByIssue(
-                        typeId = coin.numistaId,
-                        issueId = issue.numistaId
-                    )
-                } catch (e: FeignException.NotFound) {
-                    logger.warn { "No prices available for issue ${issue.id} (Numista ID: ${issue.numistaId})" }
-                    processedIssueIds.add(issue.id)
-                    return@forEach
-                } catch (e: FeignException.TooManyRequests) {
-                    logger.error { "Rate limited by Numista API for coin $coinId" }
-                    throw RateLimitException("Numista API rate limit exceeded", e)
-                }
-
-                // Convert prices, filtering by coin's grade if it has one
-                val issuePrices = pricesResponse.prices.mapNotNull { priceByGrade ->
-                    val grade = CoinGrade.fromNumistaGrade(priceByGrade.grade)
-                    if (grade == null) {
-                        logger.debug { "Unknown grade '${priceByGrade.grade}' for issue ${issue.id}, skipping" }
-                        return@mapNotNull null
-                    }
-
-                    // If coin has a specific grade, only save prices for that grade
-                    // If coin has no grade, save all grades for broader coverage
-                    if (coin.grade != null && grade != coin.grade) {
-                        logger.debug { "Skipping grade $grade for coin $coinId (coin grade: ${coin.grade})" }
-                        return@mapNotNull null
-                    }
-
-                    IssuePrice(
-                        issueId = issue.id.toString(),
-                        grade = grade,
-                        price = BigDecimal.valueOf(priceByGrade.price),
-                        currency = Currency.getInstance(pricesResponse.currency),
-                        createdAt = ZonedDateTime.now()
-                    )
-                }
-
-                if (issuePrices.isEmpty()) {
-                    logger.info { "No valid prices returned for issue ${issue.id} matching coin ${coin.id} criteria" }
-                    processedIssueIds.add(issue.id)
-                    return@forEach
-                }
-
-                issuePriceRepositoryAdapter.saveAll(issuePrices)
-                val gradeFilter = if (coin.grade != null) " (grade: ${coin.grade})" else " (all grades)"
-                logger.info { "Saved ${issuePrices.size} price(s) for coin $coinId (issue: ${issue.id})$gradeFilter" }
-                processedIssueIds.add(issue.id)
-                anySuccess = true
             }
 
-            return anySuccess
+            return true
         } catch (e: RateLimitException) {
-            throw e // Propagate to scheduler to stop processing
+            throw e
         } catch (e: Exception) {
             logger.error(e) { "Unexpected error fetching prices for coin $coinId" }
             return false
@@ -173,22 +101,127 @@ class IssuePriceFetchService(
     }
 
     /**
-     * Selects relevant issues for a coin based on available data.
+     * Determines if an issue should be skipped based on:
+     * 1. Missing ID
+     * 2. Already processed in this transaction
+     * 3. Already attempted today
+     */
+    private fun shouldSkipIssue(issue: Issue, processedIssueIds: Set<UUID>?): Boolean {
+        val issueId = issue.id
+        if (issueId == null) {
+            logger.warn { "Issue has no ID, skipping" }
+            return true
+        }
+
+        // Skip if already processed in this transaction (within-transaction deduplication)
+        if (processedIssueIds?.contains(issueId) == true) {
+            logger.info { "Issue $issueId already processed in this run, skipping" }
+            return true
+        }
+
+        // Skip if already attempted today (once-per-day limit)
+        val lastAttempt = issue.lastPriceFetchAttempt
+        if (lastAttempt != null) {
+            val today = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+            val lastAttemptDay = lastAttempt.truncatedTo(ChronoUnit.DAYS)
+            if (!lastAttemptDay.isBefore(today)) {
+                logger.info { "Issue $issueId already attempted today, skipping" }
+                return true
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * Processes a single issue: fetch prices, convert, save, and update timestamp.
+     * Updates timestamp regardless of outcome (success, 404, or no matching prices).
+     */
+    private fun processIssue(coin: Coin, issue: Issue) {
+        val issueId = issue.id!!
+        val pricesResponse = fetchPricesFromApi(coin, issue) ?: return
+
+        val issuePrices = convertAndFilterPrices(coin, issue, pricesResponse)
+
+        if (issuePrices.isNotEmpty()) {
+            issuePriceRepositoryAdapter.saveAll(issuePrices)
+            val gradeFilter = if (coin.grade != null) " (grade: ${coin.grade})" else " (all grades)"
+            logger.info { "Saved ${issuePrices.size} price(s) for coin ${coin.id} (issue: $issueId)$gradeFilter" }
+        } else {
+            logger.info { "No matching prices for issue $issueId (coin ${coin.id} criteria)" }
+        }
+
+        // Always update timestamp (even on 404 or no matches)
+        issueRepositoryAdapter.updateLastPriceFetchAttempt(issueId, ZonedDateTime.now())
+    }
+
+    /**
+     * Fetches prices from Numista API for an issue.
+     * Returns null if no prices available (404) or rate limited (throws exception).
+     * Updates timestamp on 404 to prevent repeated attempts.
+     */
+    private fun fetchPricesFromApi(coin: Coin, issue: Issue): NumistaPriceResponse? {
+        val issueId = issue.id!!
+
+        return try {
+            numistaClient.getPricesByIssue(
+                typeId = coin.numistaId!!,
+                issueId = issue.numistaId
+            )
+        } catch (_: FeignException.NotFound) {
+            logger.info { "No prices available for issue $issueId (Numista ID: ${issue.numistaId})" }
+            // Update timestamp - 404 is a successful check (prices don't exist)
+            issueRepositoryAdapter.updateLastPriceFetchAttempt(issueId, ZonedDateTime.now())
+            null
+        } catch (_: FeignException.TooManyRequests) {
+            logger.error { "Rate limited by Numista API" }
+            throw RateLimitException("Numista API rate limit exceeded")
+        }
+    }
+
+    /**
+     * Converts API prices to domain objects and filters by coin's grade if specified.
+     * If coin has a grade: only returns prices for that grade
+     * If coin has no grade: returns prices for all grades
+     */
+    private fun convertAndFilterPrices(
+        coin: Coin,
+        issue: Issue,
+        pricesResponse: NumistaPriceResponse
+    ): List<IssuePrice> {
+        return pricesResponse.prices.mapNotNull { priceByGrade ->
+            val grade = CoinGrade.fromNumistaGrade(priceByGrade.grade)
+            if (grade == null) {
+                logger.info { "Unknown grade '${priceByGrade.grade}' for issue ${issue.id}, skipping" }
+                return@mapNotNull null
+            }
+
+            // If coin has a specific grade, only include prices for that grade
+            if (coin.grade != null && grade != coin.grade) {
+                return@mapNotNull null
+            }
+
+            IssuePrice(
+                issueId = issue.id.toString(),
+                grade = grade,
+                price = BigDecimal.valueOf(priceByGrade.price),
+                currency = Currency.getInstance(pricesResponse.currency),
+                createdAt = ZonedDateTime.now()
+            )
+        }
+    }
+
+    /**
+     * Selects relevant issues for a coin based on year and mint mark matching.
      *
      * Logic:
      * 1. Year is mandatory - always filter by coin's year
      * 2. MintMark is optional:
      *    - If coin has mintMark → filter to issues with matching mintLetter
-     *    - If coin has NO mintMark → use ALL issues for that year (all mint variations)
+     *    - If coin has NO mintMark → use ALL issues for that year
      * 3. Limit to maxIssues to prevent excessive API calls
      *
-     * This ensures we get prices for all relevant variations when the coin data is incomplete.
-     * For example, a coin from 1943 with no mint mark will fetch prices for 1943, 1943-D, 1943-S, etc.
-     *
-     * @param coin The coin to match
-     * @param issues The available issues for the coin type
-     * @param maxIssues Maximum number of issues to return
-     * @return List of matching issues (empty if no issues available)
+     * Example: A 1943 coin with no mint mark will match 1943, 1943-D, 1943-S, etc.
      */
     private fun selectRelevantIssues(coin: Coin, issues: List<Issue>, maxIssues: Int): List<Issue> {
         if (issues.isEmpty()) return emptyList()
@@ -197,8 +230,7 @@ class IssuePriceFetchService(
         val coinMintMark = coin.mintMark?.value
 
         // Filter by year (mandatory)
-        val yearMatches = issues.filter { issue -> issue.year == coinYear }
-
+        val yearMatches = issues.filter { it.year == coinYear }
         if (yearMatches.isEmpty()) {
             logger.warn { "No issues found for coin ${coin.id} with year $coinYear" }
             return emptyList()
@@ -206,12 +238,12 @@ class IssuePriceFetchService(
 
         // Further filter by mint mark if coin has one
         val relevantIssues = if (coinMintMark != null) {
-            val mintMatches = yearMatches.filter { issue -> issue.mintLetter == coinMintMark }
+            val mintMatches = yearMatches.filter { it.mintLetter == coinMintMark }
             if (mintMatches.isNotEmpty()) {
                 logger.debug { "Found ${mintMatches.size} issue(s) for coin ${coin.id} (year=$coinYear, mint=$coinMintMark)" }
                 mintMatches
             } else {
-                logger.info { "No issues found with mint mark '$coinMintMark' for coin ${coin.id}, using all year $coinYear issues" }
+                logger.info { "No issues with mint mark '$coinMintMark' for coin ${coin.id}, using all year $coinYear issues" }
                 yearMatches
             }
         } else {
@@ -229,17 +261,5 @@ class IssuePriceFetchService(
         }
 
         return result
-    }
-
-    /**
-     * Checks if prices should be fetched for an issue.
-     * Implements the once-per-day update limit by checking if prices were already fetched today.
-     *
-     * @param issueId The UUID of the issue
-     * @return true if prices should be fetched, false if already fetched today
-     */
-    private fun shouldFetchPrices(issueId: UUID): Boolean {
-        val today = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        return !issuePriceRepositoryAdapter.hasRecentPrices(issueId, today)
     }
 }
