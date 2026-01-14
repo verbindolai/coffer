@@ -32,8 +32,7 @@ class CoinEntityTest {
             rarityScore = 50,
             createdAt = ZonedDateTime.now(),
             diameterInMillimeters = BigDecimal("32.70"),
-            thicknessInMillimeters = BigDecimal("2.87"),
-            lastPriceUpdate = ZonedDateTime.now()
+            thicknessInMillimeters = BigDecimal("2.87")
         )
 
         // When - convert to domain and back

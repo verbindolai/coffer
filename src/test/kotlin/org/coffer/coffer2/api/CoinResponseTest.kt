@@ -69,8 +69,7 @@ class CoinResponseTest {
             rarity = Rarity(85),
             createdAt = ZonedDateTime.now(),
             diameterInMillimeters = BigDecimal("28.00"),
-            thicknessInMillimeters = BigDecimal("2.50"),
-            lastPriceUpdate = ZonedDateTime.now()
+            thicknessInMillimeters = BigDecimal("2.50")
         )
 
         // When
@@ -96,7 +95,6 @@ class CoinResponseTest {
         assertEquals(0, BigDecimal("28.00").compareTo(response.diameterInMillimeters))
         assertEquals(0, BigDecimal("2.50").compareTo(response.thicknessInMillimeters))
         assertNotNull(response.createdAt)
-        assertNotNull(response.lastPriceUpdate)
     }
 
     @Test
@@ -140,6 +138,5 @@ class CoinResponseTest {
         assertEquals(null, response.rarity)
         assertEquals(null, response.diameterInMillimeters)
         assertEquals(null, response.thicknessInMillimeters)
-        assertEquals(null, response.lastPriceUpdate)
     }
 }

@@ -27,7 +27,6 @@ data class Coin(
     val createdAt: ZonedDateTime = ZonedDateTime.now(),
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
-    val lastPriceUpdate: ZonedDateTime? = null,
 )
 
 data class YearOfMinting(

@@ -69,10 +69,7 @@ data class CoinEntity(
     val diameterInMillimeters: BigDecimal?,
 
     @Column(precision = 19, scale = 4)
-    val thicknessInMillimeters: BigDecimal?,
-
-    @Column
-    val lastPriceUpdate: ZonedDateTime?
+    val thicknessInMillimeters: BigDecimal?
 ) {
     fun toCoin(): Coin = Coin(
         id = id,
@@ -93,8 +90,7 @@ data class CoinEntity(
         rarity = rarityScore?.let { Rarity(it) },
         createdAt = createdAt,
         diameterInMillimeters = diameterInMillimeters,
-        thicknessInMillimeters = thicknessInMillimeters,
-        lastPriceUpdate = lastPriceUpdate
+        thicknessInMillimeters = thicknessInMillimeters
     )
 
     companion object {
@@ -117,8 +113,7 @@ data class CoinEntity(
             rarityScore = coin.rarity?.score,
             createdAt = coin.createdAt,
             diameterInMillimeters = coin.diameterInMillimeters,
-            thicknessInMillimeters = coin.thicknessInMillimeters,
-            lastPriceUpdate = coin.lastPriceUpdate
+            thicknessInMillimeters = coin.thicknessInMillimeters
         )
     }
 }

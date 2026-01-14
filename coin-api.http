@@ -48,8 +48,7 @@
 #   "rarity": null,
 #   "createdAt": "2026-01-11T22:00:00Z",
 #   "diameterInMillimeters": 38.7,
-#   "thicknessInMillimeters": 2.84,
-#   "lastPriceUpdate": null
+#   "thicknessInMillimeters": 2.84
 # }
 POST http://localhost:8080/api/v1/coins
 Content-Type: application/json

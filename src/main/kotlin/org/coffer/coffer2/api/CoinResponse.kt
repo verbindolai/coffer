@@ -29,7 +29,6 @@ data class CoinResponse(
     val createdAt: ZonedDateTime,
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
-    val lastPriceUpdate: ZonedDateTime? = null,
 ) {
     companion object {
         fun from(coin: Coin): CoinResponse =
@@ -53,8 +52,7 @@ data class CoinResponse(
                     rarity = rarity,
                     createdAt = createdAt,
                     diameterInMillimeters = diameterInMillimeters,
-                    thicknessInMillimeters = thicknessInMillimeters,
-                    lastPriceUpdate = lastPriceUpdate,
+                    thicknessInMillimeters = thicknessInMillimeters
                 )
             }
     }

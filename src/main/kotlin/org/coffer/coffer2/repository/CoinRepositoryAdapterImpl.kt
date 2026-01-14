@@ -13,7 +13,12 @@ class CoinRepositoryAdapterImpl(
     override fun save(coin: Coin): Coin {
         return coinRepository.save(CoinEntity.fromCoin(coin)).toCoin()
     }
+
     override fun findById(id: UUID): Coin? {
         return coinRepository.findByIdOrNull(id)?.toCoin()
+    }
+
+    override fun findByNumistaIdIsNotNull(): List<Coin> {
+        return coinRepository.findByNumistaIdIsNotNull().map { it.toCoin() }
     }
 }

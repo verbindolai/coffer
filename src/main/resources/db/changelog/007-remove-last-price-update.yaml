@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-drop-last-price-update-column
+      author: coffer2
+      changes:
+        - dropColumn:
+            tableName: coins
+            columnName: last_price_update
+      rollback:
+        - addColumn:
+            tableName: coins
+            columns:
+              - column:
+                  name: last_price_update
+                  type: timestamp with time zone

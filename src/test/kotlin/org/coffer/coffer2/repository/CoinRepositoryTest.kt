@@ -38,8 +38,7 @@ class CoinRepositoryTest : IntegrationTestBase() {
             rarityScore = null,
             createdAt = ZonedDateTime.now(),
             diameterInMillimeters = null,
-            thicknessInMillimeters = null,
-            lastPriceUpdate = null
+            thicknessInMillimeters = null
         )
 
         // When
