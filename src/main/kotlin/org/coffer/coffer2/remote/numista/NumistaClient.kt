@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam
 interface NumistaClient {
     @GetMapping("/v3/types/{typeId}")
     fun getCoinType(
-        @PathVariable("typeId") typeId: String,
+        @PathVariable typeId: String,
     ): NumistaTypeResponse
 
     @GetMapping("/v3/types")
@@ -29,13 +29,13 @@ interface NumistaClient {
 
     @GetMapping("/v3/types/{typeId}/issues")
     fun getIssues(
-        @PathVariable("typeId") typeId: String,
+        @PathVariable typeId: String,
     ): List<NumistaIssueResponse>
 
     @GetMapping("/v3/types/{typeId}/issues/{issueId}/prices")
     fun getPricesByIssue(
-        @PathVariable("typeId") typeId: String,
-        @PathVariable("issueId") issueId: String,
+        @PathVariable typeId: String,
+        @PathVariable issueId: String,
     ): NumistaPriceResponse
 }
 
