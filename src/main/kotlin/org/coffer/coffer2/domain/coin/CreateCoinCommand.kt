@@ -24,6 +24,7 @@ data class CreateCoinCommand(
     val rarity: Rarity? = null,
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
+    val quantity: Int = 1,
 ) {
     fun toCoin() = Coin(
         id = UUID.randomUUID(),
@@ -44,5 +45,6 @@ data class CreateCoinCommand(
         rarity = rarity,
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
+        quantity = quantity,
     )
 }

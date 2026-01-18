@@ -39,6 +39,10 @@ class CoinRepositoryAdapterImpl(
         return coinRepository.findByNumistaIdIsNotNull().map { it.toCoin() }
     }
 
+    override fun findAll(): List<Coin> {
+        return coinRepository.findAll().map { it.toCoin() }
+    }
+
     private fun buildSpecification(query: CoinSearchQuery): Specification<CoinEntity> {
         val specs = mutableListOf<Specification<CoinEntity>>()
 

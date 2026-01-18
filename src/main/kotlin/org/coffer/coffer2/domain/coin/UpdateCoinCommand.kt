@@ -25,6 +25,7 @@ data class UpdateCoinCommand(
     val rarity: Rarity? = null,
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
+    val quantity: Int = 1,
 ) {
     fun toCoin(existingCoin: Coin) = existingCoin.copy(
         title = title,
@@ -44,5 +45,6 @@ data class UpdateCoinCommand(
         rarity = rarity,
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
+        quantity = quantity,
     )
 }

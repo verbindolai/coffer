@@ -17,4 +17,9 @@ interface CoinRepositoryAdapter {
      * Finds all coins that have a Numista ID.
      */
     fun findByNumistaIdIsNotNull(): List<Coin>
+
+    /**
+     * Finds all coins in the repository.
+     */
+    fun findAll(): List<Coin>
 }

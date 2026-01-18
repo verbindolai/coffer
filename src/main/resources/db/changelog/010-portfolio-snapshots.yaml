@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-portfolio-snapshots
+      author: coffer2
+      changes:
+        - createTable:
+            tableName: portfolio_snapshots
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: snapshot_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_coins
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metal_value
+                  type: decimal(19,4)
+              - column:
+                  name: gold_grams
+                  type: decimal(19,6)
+              - column:
+                  name: silver_grams
+                  type: decimal(19,6)
+              - column:
+                  name: platinum_grams
+                  type: decimal(19,6)
+              - column:
+                  name: collector_value_exact
+                  type: decimal(19,4)
+              - column:
+                  name: collector_value_min
+                  type: decimal(19,4)
+              - column:
+                  name: collector_value_max
+                  type: decimal(19,4)
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+            columns:
+              - column:
+                  name: snapshot_date
+                  descending: true
+            unique: true
+      rollback:
+        - dropIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+        - dropTable:
+            tableName: portfolio_snapshots

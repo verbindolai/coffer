@@ -1,0 +1,32 @@
+package org.coffer.coffer2.schedule
+
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.coffer.coffer2.application.portfolio.PortfolioSnapshotService
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+
+@Component
+class PortfolioSnapshotScheduler(
+    private val portfolioSnapshotService: PortfolioSnapshotService
+) {
+    private val logger = KotlinLogging.logger {}
+
+    /**
+     * Creates a daily portfolio snapshot at end of trading day.
+     * Default: 6 PM daily, configurable via coffer.portfolio.snapshot-cron
+     */
+    @Scheduled(cron = "\${coffer.portfolio.snapshot-cron:0 0 18 * * *}")
+    fun createDailySnapshot() {
+        logger.info { "Creating daily portfolio snapshot" }
+        try {
+            val snapshot = portfolioSnapshotService.computeAndStoreSnapshot()
+            logger.info {
+                "Portfolio snapshot created: date=${snapshot.snapshotDate}, " +
+                "coins=${snapshot.totalCoins}, quantity=${snapshot.totalQuantity}, " +
+                "metalValue=${snapshot.metalValue}, collectorExact=${snapshot.collectorValueExact}"
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to create portfolio snapshot" }
+        }
+    }
+}

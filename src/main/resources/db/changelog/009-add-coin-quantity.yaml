@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-coin-quantity
+      author: coffer2
+      changes:
+        - addColumn:
+            tableName: coins
+            columns:
+              - column:
+                  name: quantity
+                  type: int
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: coins
+            columnName: quantity

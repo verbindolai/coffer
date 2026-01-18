@@ -63,6 +63,9 @@ data class UpdateCoinRequest(
     @field:Max(value = 100, message = "Rarity score must be at most 100")
     val rarityScore: Int? = null,
 
+    @field:Min(value = 1, message = "Quantity must be at least 1")
+    val quantity: Int = 1,
+
     val shape: CoinShape? = null,
 
     val diameterInMillimeters: BigDecimal?,
@@ -88,6 +91,7 @@ data class UpdateCoinRequest(
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
         rarity = rarityScore?.let { Rarity(it) },
-        shape = shape ?: CoinShape.UNKNOWN
+        shape = shape ?: CoinShape.UNKNOWN,
+        quantity = quantity
     )
 }

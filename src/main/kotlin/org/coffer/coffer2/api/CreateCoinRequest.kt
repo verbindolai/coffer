@@ -85,6 +85,7 @@ data class CreateCoinRequest(
         metalType = metalType,
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
-        rarity = rarityScore?.let { Rarity(it) }
+        rarity = rarityScore?.let { Rarity(it) },
+        quantity = quantity
     )
 }
