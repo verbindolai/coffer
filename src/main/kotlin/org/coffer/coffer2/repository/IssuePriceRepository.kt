@@ -4,6 +4,7 @@ import org.coffer.coffer2.domain.coin.CoinGrade
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+import java.time.ZonedDateTime
 import java.util.*
 
 @Repository
@@ -36,4 +37,58 @@ interface IssuePriceRepository : JpaRepository<IssuePriceEntity, UUID> {
         ORDER BY ip.grade, ip.created_at DESC
     """, nativeQuery = true)
     fun findLatestPricesByIssueId(issueId: UUID): List<IssuePriceEntity>
+
+    /**
+     * Finds historical prices for issues within a time range.
+     */
+    @Query("""
+        SELECT ip FROM IssuePriceEntity ip
+        WHERE ip.issueId IN :issueIds
+        AND ip.grade = :grade
+        AND ip.createdAt >= :startTime
+        ORDER BY ip.createdAt ASC
+    """)
+    fun findByIssueIdsAndGradeAfter(
+        issueIds: List<UUID>,
+        grade: CoinGrade,
+        startTime: ZonedDateTime
+    ): List<IssuePriceEntity>
+
+    /**
+     * Finds all historical prices for issues with a specific grade.
+     */
+    @Query("""
+        SELECT ip FROM IssuePriceEntity ip
+        WHERE ip.issueId IN :issueIds
+        AND ip.grade = :grade
+        ORDER BY ip.createdAt ASC
+    """)
+    fun findByIssueIdsAndGrade(
+        issueIds: List<UUID>,
+        grade: CoinGrade
+    ): List<IssuePriceEntity>
+
+    /**
+     * Finds historical prices for issues (all grades) within a time range.
+     */
+    @Query("""
+        SELECT ip FROM IssuePriceEntity ip
+        WHERE ip.issueId IN :issueIds
+        AND ip.createdAt >= :startTime
+        ORDER BY ip.createdAt ASC
+    """)
+    fun findByIssueIdsAfter(
+        issueIds: List<UUID>,
+        startTime: ZonedDateTime
+    ): List<IssuePriceEntity>
+
+    /**
+     * Finds all historical prices for issues (all grades).
+     */
+    @Query("""
+        SELECT ip FROM IssuePriceEntity ip
+        WHERE ip.issueId IN :issueIds
+        ORDER BY ip.createdAt ASC
+    """)
+    fun findByIssueIds(issueIds: List<UUID>): List<IssuePriceEntity>
 }
