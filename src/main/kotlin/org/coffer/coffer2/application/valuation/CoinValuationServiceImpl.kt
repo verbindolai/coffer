@@ -70,14 +70,18 @@ class CoinValuationServiceImpl(
             return null
         }
 
-        val sampledQuotes = sampleDataPoints(quotes, timeframe.targetDataPoints) { it.quotedAt }
-        val currency = sampledQuotes.firstOrNull()?.currencyCode ?: "USD"
+        val currency = quotes.first().currencyCode
 
-        val dataPoints = sampledQuotes.map { quote ->
+        // Bucket quotes by timeframe interval, taking last value per bucket
+        val bucketedQuotes = bucketByInterval(quotes, timeframe) { it.quotedAt }
+
+        val dataPoints = bucketedQuotes.map { (bucketTime, quotesInBucket) ->
+            // Use the last quote in the bucket (most recent)
+            val lastQuote = quotesInBucket.last()
             MetalValuationPoint(
-                timestamp = quote.quotedAt,
-                pricePerGram = quote.pricePerGram,
-                totalValue = pureMetalMass.multiply(quote.pricePerGram)
+                timestamp = bucketTime,
+                pricePerGram = lastQuote.pricePerGram,
+                totalValue = pureMetalMass.multiply(lastQuote.pricePerGram)
                     .setScale(2, RoundingMode.HALF_UP)
             )
         }
@@ -108,15 +112,13 @@ class CoinValuationServiceImpl(
             return null
         }
 
-        val currency = prices.firstOrNull()?.currencyCode ?: "USD"
+        val currency = prices.first().currencyCode
 
-        val groupedByTime = prices.groupBy { truncateToInterval(it.createdAt, timeframe) }
-        val sortedTimes = groupedByTime.keys.sorted()
-        val sampledTimes = sampleDataPoints(sortedTimes, timeframe.targetDataPoints) { it }
+        // Bucket prices by timeframe interval
+        val bucketedPrices = bucketByInterval(prices, timeframe) { it.createdAt }
 
-        val dataPoints = sampledTimes.map { time ->
-            val pricesAtTime = groupedByTime[time] ?: emptyList()
-            createIssueValuationPoint(time, pricesAtTime, isExactMatch)
+        val dataPoints = bucketedPrices.map { (bucketTime, pricesInBucket) ->
+            createIssueValuationPoint(bucketTime, pricesInBucket, isExactMatch)
         }
 
         return IssueValuationResult(
@@ -144,15 +146,18 @@ class CoinValuationServiceImpl(
         prices: List<IssuePriceEntity>,
         isExactMatch: Boolean
     ): IssueValuationPoint {
-        return if (isExactMatch && prices.size == 1) {
+        val priceValues = prices.map { it.price }
+
+        return if (isExactMatch) {
+            // Single issue: use last price in bucket
             IssueValuationPoint(
                 timestamp = timestamp,
-                price = prices.first().price,
+                price = prices.last().price,
                 minPrice = null,
                 maxPrice = null
             )
         } else {
-            val priceValues = prices.map { it.price }
+            // Multiple issues: show min/max range
             IssueValuationPoint(
                 timestamp = timestamp,
                 price = null,
@@ -162,39 +167,26 @@ class CoinValuationServiceImpl(
         }
     }
 
-    private fun truncateToInterval(time: ZonedDateTime, timeframe: ValuationTimeframe): ZonedDateTime {
-        return when (timeframe) {
-            ValuationTimeframe.HOUR_1 -> time.withMinute(time.minute / 5 * 5).withSecond(0).withNano(0)
-            ValuationTimeframe.DAY_1 -> time.withMinute(0).withSecond(0).withNano(0)
-            ValuationTimeframe.WEEK_1 -> time.withMinute(0).withSecond(0).withNano(0)
-            ValuationTimeframe.MONTH_1 -> time.withHour(0).withMinute(0).withSecond(0).withNano(0)
-            ValuationTimeframe.YEAR_1 -> time.withHour(0).withMinute(0).withSecond(0).withNano(0)
-            ValuationTimeframe.MAX -> time.withHour(0).withMinute(0).withSecond(0).withNano(0)
-        }
-    }
-
-    private fun <T> sampleDataPoints(
+    /**
+     * Groups items into time buckets based on the timeframe interval.
+     * Returns a sorted map of bucket start time -> items in that bucket.
+     * Buckets with no data are skipped (gaps are allowed).
+     */
+    private fun <T> bucketByInterval(
         items: List<T>,
-        targetCount: Int,
+        timeframe: ValuationTimeframe,
         timestampSelector: (T) -> ZonedDateTime
-    ): List<T> {
-        if (items.size <= targetCount) {
-            return items
+    ): List<Pair<ZonedDateTime, List<T>>> {
+        if (items.isEmpty()) return emptyList()
+
+        // Group items by their bucket
+        val grouped = items.groupBy { item ->
+            timeframe.truncateToBucket(timestampSelector(item))
         }
 
-        val result = mutableListOf<T>()
-        val step = items.size.toDouble() / targetCount
-
-        var index = 0.0
-        while (index < items.size && result.size < targetCount) {
-            result.add(items[index.toInt()])
-            index += step
-        }
-
-        if (result.last() != items.last()) {
-            result[result.lastIndex] = items.last()
-        }
-
-        return result
+        // Sort by bucket time and return as list of pairs
+        return grouped.entries
+            .sortedBy { it.key }
+            .map { it.key to it.value }
     }
 }
