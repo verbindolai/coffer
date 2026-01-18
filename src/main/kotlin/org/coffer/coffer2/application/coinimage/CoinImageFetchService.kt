@@ -25,6 +25,11 @@ class CoinImageFetchService(
      * @return true if at least one image was successfully fetched, false otherwise
      */
     fun fetchMissingImagesFromNumista(coinId: UUID, numistaId: String): Boolean {
+        if (numistaId.isBlank()) {
+            logger.info { "Numista ID is blank for coin $coinId, skipping fetch" }
+            return false
+        }
+
         logger.info { "Processing image fetch for coin $coinId with Numista ID $numistaId" }
 
         val existingSides = coinService.getCoinImageSides(coinId)
