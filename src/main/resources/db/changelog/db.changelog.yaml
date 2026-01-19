@@ -29,3 +29,6 @@ databaseChangeLog:
   - include:
       file: 010-portfolio-snapshots.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 011-allow-multiple-daily-snapshots.yaml
+      relativeToChangelogFile: true

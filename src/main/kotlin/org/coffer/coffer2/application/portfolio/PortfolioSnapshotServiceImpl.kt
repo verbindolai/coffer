@@ -70,11 +70,6 @@ class PortfolioSnapshotServiceImpl(
             createdAt = ZonedDateTime.now()
         )
 
-        // Delete existing snapshot for today if any
-        portfolioSnapshotRepository.findBySnapshotDate(today)?.let {
-            portfolioSnapshotRepository.delete(it)
-        }
-
         val saved = portfolioSnapshotRepository.save(entity)
         logger.info { "Portfolio snapshot saved for $today: totalCoins=$totalCoins, totalQuantity=$totalQuantity" }
 
@@ -114,10 +109,6 @@ class PortfolioSnapshotServiceImpl(
             collectorValueMax = BigDecimal.ZERO,
             createdAt = ZonedDateTime.now()
         )
-
-        portfolioSnapshotRepository.findBySnapshotDate(date)?.let {
-            portfolioSnapshotRepository.delete(it)
-        }
 
         return PortfolioSnapshotResult.from(portfolioSnapshotRepository.save(entity))
     }

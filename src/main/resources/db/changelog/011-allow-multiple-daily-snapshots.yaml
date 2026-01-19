@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-allow-multiple-daily-snapshots
+      author: coffer2
+      changes:
+        - dropIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+        - createIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+            columns:
+              - column:
+                  name: snapshot_date
+                  descending: true
+            unique: false
+      rollback:
+        - dropIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+        - createIndex:
+            indexName: idx_portfolio_snapshots_date
+            tableName: portfolio_snapshots
+            columns:
+              - column:
+                  name: snapshot_date
+                  descending: true
+            unique: true

@@ -23,7 +23,8 @@ class PortfolioSnapshotScheduler(
             logger.info {
                 "Portfolio snapshot created: date=${snapshot.snapshotDate}, " +
                 "coins=${snapshot.totalCoins}, quantity=${snapshot.totalQuantity}, " +
-                "metalValue=${snapshot.metalValue}, collectorExact=${snapshot.collectorValueExact}"
+                "metalValue=${snapshot.metalValue}, collectorExact=${snapshot.collectorValueExact}, " +
+                "collectorMin=${snapshot.collectorValueMin}, collectorMax=${snapshot.collectorValueMax}"
             }
         } catch (e: Exception) {
             logger.error(e) { "Failed to create portfolio snapshot" }

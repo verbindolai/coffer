@@ -12,22 +12,22 @@ interface PortfolioSnapshotRepository : JpaRepository<PortfolioSnapshotEntity, U
     @Query("""
         SELECT ps FROM PortfolioSnapshotEntity ps
         WHERE ps.snapshotDate >= :startDate
-        ORDER BY ps.snapshotDate ASC
+        ORDER BY ps.snapshotDate ASC, ps.createdAt ASC
     """)
     fun findBySnapshotDateAfter(startDate: LocalDate): List<PortfolioSnapshotEntity>
 
     @Query("""
         SELECT ps FROM PortfolioSnapshotEntity ps
-        ORDER BY ps.snapshotDate ASC
+        ORDER BY ps.snapshotDate ASC, ps.createdAt ASC
     """)
     fun findAllOrderBySnapshotDateAsc(): List<PortfolioSnapshotEntity>
 
     @Query("""
         SELECT ps FROM PortfolioSnapshotEntity ps
-        ORDER BY ps.snapshotDate DESC
+        ORDER BY ps.snapshotDate DESC, ps.createdAt DESC
         LIMIT 1
     """)
     fun findLatest(): PortfolioSnapshotEntity?
 
-    fun findBySnapshotDate(date: LocalDate): PortfolioSnapshotEntity?
+    fun findBySnapshotDate(date: LocalDate): List<PortfolioSnapshotEntity>
 }
