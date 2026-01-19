@@ -2,6 +2,9 @@ package org.coffer.coffer2.api
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.coffer.coffer2.application.portfolio.PortfolioValuationService
 import org.coffer.coffer2.domain.ValuationTimeframe
@@ -36,8 +39,17 @@ class PortfolioValuationController(
             Timeframes: 1h, 1d, 1w, 1m, 1y, max
         """
     )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Portfolio valuation returned successfully",
+        content = [Content(schema = Schema(implementation = PortfolioValuationResponse::class))]
+    )
     fun getValuation(
-        @Parameter(description = "Timeframe: 1h, 1d, 1w, 1m, 1y, max")
+        @Parameter(
+            description = "Timeframe for historical data",
+            example = "1d",
+            schema = Schema(allowableValues = ["1h", "1d", "1w", "1m", "1y", "max"])
+        )
         @RequestParam(defaultValue = "1d") timeframe: String
     ): ResponseEntity<PortfolioValuationResponse> {
         val tf = ValuationTimeframe.fromCode(timeframe)

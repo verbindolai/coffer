@@ -2,6 +2,10 @@ package org.coffer.coffer2.api
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.coffer.coffer2.application.CoinService
@@ -35,6 +39,20 @@ class CoinController(
 
     @PostMapping
     @Operation(summary = "Create a new coin", description = "Add a new coin to the collection")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Coin created successfully",
+                content = [Content(schema = Schema(implementation = CoinResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            )
+        ]
+    )
     fun createCoin(@Valid @RequestBody request: CreateCoinRequest): CoinResponse {
         val command = request.toCommand()
         val coin = coinService.createCoin(command)
@@ -43,7 +61,24 @@ class CoinController(
 
     @GetMapping("/{id}")
     @Operation(summary = "Get coin by ID", description = "Retrieve a specific coin by its ID")
-    fun getCoinById(@PathVariable id: UUID): ResponseEntity<CoinResponse> {
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Coin found",
+                content = [Content(schema = Schema(implementation = CoinResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Coin not found",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            )
+        ]
+    )
+    fun getCoinById(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        @PathVariable id: UUID
+    ): ResponseEntity<CoinResponse> {
         val coin = coinService.getCoinById(id)
             ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(CoinResponse.from(coin))
@@ -51,7 +86,27 @@ class CoinController(
 
     @PutMapping("/{id}")
     @Operation(summary = "Update coin", description = "Update an existing coin's details")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Coin updated successfully",
+                content = [Content(schema = Schema(implementation = CoinResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid request data",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Coin not found",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            )
+        ]
+    )
     fun updateCoin(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
         @PathVariable id: UUID,
         @Valid @RequestBody request: UpdateCoinRequest
     ): ResponseEntity<CoinResponse> {
@@ -62,13 +117,27 @@ class CoinController(
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete coin", description = "Delete a coin from the collection")
-    fun deleteCoin(@PathVariable id: UUID): ResponseEntity<Void> {
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "204", description = "Coin deleted successfully"),
+            ApiResponse(
+                responseCode = "404",
+                description = "Coin not found",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            )
+        ]
+    )
+    fun deleteCoin(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        @PathVariable id: UUID
+    ): ResponseEntity<Void> {
         coinService.deleteCoin(id)
         return ResponseEntity.noContent().build()
     }
 
     @GetMapping
-    @Operation(summary = "Search coins", description = "Search and filter coins with pagination")
+    @Operation(summary = "Search coins", description = "Search and filter coins with pagination. Returns paginated results sorted by creation date descending by default.")
+    @ApiResponse(responseCode = "200", description = "Search results returned successfully")
     fun searchCoins(
         @Parameter(description = "Filter by issuer country code (ISO 3166-1 alpha-2)")
         @RequestParam(required = false) country: String?,
@@ -126,15 +195,31 @@ class CoinController(
 
     @GetMapping("/{coinId}/images")
     @Operation(summary = "Get coin images", description = "Retrieve all images for a specific coin")
-    fun getCoinImages(@PathVariable coinId: UUID): ResponseEntity<List<CoinImageResponse>> {
+    @ApiResponse(responseCode = "200", description = "List of coin images returned successfully")
+    fun getCoinImages(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        @PathVariable coinId: UUID
+    ): ResponseEntity<List<CoinImageResponse>> {
         val images = coinService.getImagesForCoin(coinId)
         return ResponseEntity.ok(images.map { CoinImageResponse.from(it) })
     }
 
     @GetMapping("/{coinId}/images/{imageId}")
     @Operation(summary = "Get coin image metadata", description = "Retrieve metadata for a specific coin image")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Image metadata returned successfully",
+                content = [Content(schema = Schema(implementation = CoinImageResponse::class))]
+            ),
+            ApiResponse(responseCode = "404", description = "Image not found")
+        ]
+    )
     fun getCoinImage(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
         @PathVariable coinId: UUID,
+        @Parameter(description = "Image UUID", example = "660e8400-e29b-41d4-a716-446655440001")
         @PathVariable imageId: UUID
     ): ResponseEntity<CoinImageResponse> {
         val image = coinService.getCoinImage(coinId, imageId)
@@ -143,9 +228,21 @@ class CoinController(
     }
 
     @GetMapping("/{coinId}/images/{imageId}/content")
-    @Operation(summary = "Get coin image content", description = "Download the actual image file for a specific coin image")
+    @Operation(summary = "Get coin image content", description = "Download the actual image file for a specific coin image. Returns the binary image data with appropriate Content-Type header.")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Image file returned successfully",
+                content = [Content(mediaType = "image/*")]
+            ),
+            ApiResponse(responseCode = "404", description = "Image not found")
+        ]
+    )
     fun getCoinImageContent(
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
         @PathVariable coinId: UUID,
+        @Parameter(description = "Image UUID", example = "660e8400-e29b-41d4-a716-446655440001")
         @PathVariable imageId: UUID
     ): ResponseEntity<org.springframework.core.io.Resource> {
         val (image, path) = coinService.getImageContent(coinId, imageId)

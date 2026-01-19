@@ -1,5 +1,6 @@
 package org.coffer.coffer2.api
 
+import io.swagger.v3.oas.annotations.media.Schema
 import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.coffer.coffer2.domain.exception.CofferDomainException
 import org.springframework.http.HttpStatus
@@ -25,6 +26,8 @@ class GlobalExceptionHandler {
     }
 }
 
+@Schema(description = "Error response returned for failed requests")
 data class ErrorResponse(
+    @Schema(description = "Human-readable error message", example = "Coin not found with id: 550e8400-e29b-41d4-a716-446655440000")
     val message: String
 )

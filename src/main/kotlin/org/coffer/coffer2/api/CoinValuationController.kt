@@ -2,6 +2,10 @@ package org.coffer.coffer2.api
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.coffer.coffer2.application.valuation.CoinValuationService
 import org.coffer.coffer2.domain.ValuationTimeframe
@@ -33,11 +37,29 @@ class CoinValuationController(
             Timeframes: 1h, 1d, 1w, 1m, 1y, max
         """
     )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Valuation data returned successfully",
+                content = [Content(schema = Schema(implementation = CoinValuationResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Coin not found",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            )
+        ]
+    )
     fun getValuation(
-        @Parameter(description = "Coin ID")
+        @Parameter(description = "Coin UUID", example = "550e8400-e29b-41d4-a716-446655440000")
         @PathVariable coinId: UUID,
 
-        @Parameter(description = "Timeframe: 1h, 1d, 1w, 1m, 1y, max")
+        @Parameter(
+            description = "Timeframe for historical data",
+            example = "1d",
+            schema = Schema(allowableValues = ["1h", "1d", "1w", "1m", "1y", "max"])
+        )
         @RequestParam(defaultValue = "1d") timeframe: String
     ): ResponseEntity<CoinValuationResponse> {
         val tf = ValuationTimeframe.fromCode(timeframe)
