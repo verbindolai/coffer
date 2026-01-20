@@ -29,7 +29,9 @@ object CurrencyDeriver {
         "rand" to "ZAR",
         "peso" to "MXN",
         "krona" to "SEK",
-        "krone" to "NOK"
+        "krone" to "NOK",
+        "pence" to "GBP",
+        "cent" to "EUR"
     )
 
     fun derive(issuerCode: String?, valueText: String?): String? {

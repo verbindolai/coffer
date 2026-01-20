@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.application.catalog.CatalogCoinDetailsResult
 import org.coffer.coffer2.application.catalog.CatalogSearchResultItem
 import org.coffer.coffer2.application.catalog.CatalogSearchResult
+import org.coffer.coffer2.domain.coin.CoinShape
 import org.coffer.coffer2.domain.coin.CoinType
 import org.coffer.coffer2.remote.numista.NumistaClient
 import org.coffer.coffer2.remote.numista.NumistaTypeResponse
@@ -27,7 +28,7 @@ class CoinCatalogServiceImpl(
                 typeId = searchResult.id.toString(),
                 title = searchResult.title,
                 category = searchResult.category,
-                issuerCode = searchResult.issuer?.code,
+                issuerCode = IssuerCodeMapper.toIsoCode(searchResult.issuer?.code),
                 issuerName = searchResult.issuer?.name,
                 minYear = searchResult.minYear,
                 maxYear = searchResult.maxYear,
@@ -56,12 +57,13 @@ class CoinCatalogServiceImpl(
 
     private fun mapToCatalogCoinDetailsResult(type: NumistaTypeResponse): CatalogCoinDetailsResult {
         val parsedComposition = compositionParser.parse(type.composition?.text)
+        val isoCode = IssuerCodeMapper.toIsoCode(type.issuer?.code)
 
         return CatalogCoinDetailsResult(
             numistaId = type.id,
             title = type.title ?: "",
             coinType = CoinType.fromNumistaString(type.type),
-            issuerCode = type.issuer?.code,
+            issuerCode = isoCode,
             issuerName = type.issuer?.name,
             weightInGrams = type.weight?.toBigDecimal(),
             diameterInMillimeters = type.size?.toBigDecimal(),
@@ -71,14 +73,14 @@ class CoinCatalogServiceImpl(
             compositionText = type.composition?.text,
             denomination = type.value?.numeric_value?.toBigDecimal(),
             valueText = type.value?.text,
-            suggestedCurrency = CurrencyDeriver.derive(type.issuer?.code, type.value?.text),
+            suggestedCurrency = CurrencyDeriver.derive(isoCode, type.value?.text),
             minYear = type.min_year,
             maxYear = type.max_year,
             obverseImageUrl = type.obverse?.picture,
             reverseImageUrl = type.reverse?.picture,
             obverseThumbnailUrl = type.obverse?.thumbnail,
             reverseThumbnailUrl = type.reverse?.thumbnail,
-            shape = type.shape,
+            shape = CoinShape.fromNumistaString(type.shape),
             rulers = type.ruler?.mapNotNull { it.name } ?: emptyList()
         )
     }

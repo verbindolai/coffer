@@ -114,5 +114,39 @@ enum class CoinShape {
     /**
      * Shape has not been detected yet
      */
-    UNKNOWN,
+    UNKNOWN;
+
+    companion object {
+        fun fromNumistaString(value: String?): CoinShape {
+            if (value.isNullOrBlank()) return CIRCULAR
+
+            val normalized = value.lowercase().trim()
+
+            return when {
+                normalized.contains("round") || normalized.contains("circular") -> CIRCULAR
+                normalized.contains("triangular") || normalized.contains("triangle") || normalized.contains("3-sided") -> TRIANGULAR
+                normalized.contains("square") || normalized.contains("rectangular") || normalized.contains("4-sided") -> SQUARE
+                normalized.contains("pentagonal") || normalized.contains("pentagon") || normalized.contains("5-sided") -> PENTAGON
+                normalized.contains("hexagonal") || normalized.contains("hexagon") || normalized.contains("6-sided") -> HEXAGON
+                normalized.contains("heptagonal") || normalized.contains("heptagon") || normalized.contains("7-sided") -> HEPTAGON
+                normalized.contains("octagonal") || normalized.contains("octagon") || normalized.contains("8-sided") -> OCTAGON
+                normalized.contains("nonagonal") || normalized.contains("nonagon") || normalized.contains("9-sided") -> NONAGON
+                normalized.contains("decagonal") || normalized.contains("decagon") || normalized.contains("10-sided") -> DECAGON
+                normalized.contains("undecagonal") || normalized.contains("undecagon") || normalized.contains("11-sided") -> UNDECAGON
+                normalized.contains("dodecagonal") || normalized.contains("dodecagon") || normalized.contains("12-sided") -> DODECAGON
+                normalized.contains("tridecagonal") || normalized.contains("tridecagon") || normalized.contains("13-sided") -> TRIDECAGON
+                normalized.contains("tetradecagonal") || normalized.contains("tetradecagon") || normalized.contains("14-sided") -> TETRADECAGON
+                normalized.contains("pentadecagonal") || normalized.contains("pentadecagon") || normalized.contains("15-sided") -> PENTADECAGON
+                normalized.contains("hexadecagonal") || normalized.contains("hexadecagon") || normalized.contains("16-sided") -> HEXADECAGON
+                normalized.contains("heptadecagonal") || normalized.contains("heptadecagon") || normalized.contains("17-sided") -> HEPTADECAGON
+                normalized.contains("octadecagonal") || normalized.contains("octadecagon") || normalized.contains("18-sided") -> OCTADECAGON
+                normalized.contains("enneadecagonal") || normalized.contains("enneadecagon") || normalized.contains("19-sided") -> ENNEADECAGON
+                normalized.contains("icosagonal") || normalized.contains("icosagon") || normalized.contains("20-sided") -> ICOSAGON
+                normalized.contains("scallop") -> SCALLOPED
+                normalized.contains("irregular") -> IRREGULAR
+                normalized.contains("polygon") -> POLYGONAL
+                else -> CIRCULAR // Default to circular for unknown shapes
+            }
+        }
+    }
 }

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.coffer.coffer2.domain.MetalType
 import org.coffer.coffer2.domain.coin.CoinGrade
+import org.coffer.coffer2.domain.coin.CoinShape
 import org.coffer.coffer2.domain.coin.CoinType
 import org.coffer.coffer2.domain.coin.CreateCoinCommand
 import org.coffer.coffer2.domain.coin.MintMark
@@ -85,7 +86,10 @@ data class CreateCoinRequest(
     val diameterInMillimeters: BigDecimal?,
 
     @Schema(description = "Coin thickness in millimeters", example = "2.87")
-    val thicknessInMillimeters: BigDecimal?
+    val thicknessInMillimeters: BigDecimal?,
+
+    @Schema(description = "Physical shape of the coin", example = "CIRCULAR")
+    val shape: CoinShape = CoinShape.CIRCULAR
 
 ) {
     fun toCommand() = CreateCoinCommand(
@@ -105,6 +109,7 @@ data class CreateCoinRequest(
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
         rarity = rarityScore?.let { Rarity(it) },
-        quantity = quantity
+        quantity = quantity,
+        shape = shape
     )
 }

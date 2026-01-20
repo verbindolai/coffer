@@ -144,7 +144,7 @@ class PortfolioSnapshotServiceImpl(
                 MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
                 MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
                 MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
-                MetalType.NICKEL -> {} // Non-precious metal, skip gram accumulation
+                MetalType.NICKEL, MetalType.BASE_METAL -> {} // Non-precious metal, skip gram accumulation
             }
 
             // Calculate value

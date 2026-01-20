@@ -2,6 +2,7 @@ package org.coffer.coffer2.api
 
 import io.swagger.v3.oas.annotations.media.Schema
 import org.coffer.coffer2.application.catalog.CatalogCoinDetailsResult
+import org.coffer.coffer2.domain.coin.CoinShape
 import java.math.BigDecimal
 
 @Schema(description = "Detailed coin information from Numista catalog for form pre-population")
@@ -66,8 +67,8 @@ data class CatalogCoinDetails(
     @Schema(description = "URL to reverse thumbnail", example = "https://en.numista.com/catalogue/photos/...")
     val reverseThumbnailUrl: String?,
 
-    @Schema(description = "Detected coin shape", example = "Round")
-    val shape: String?,
+    @Schema(description = "Detected coin shape", example = "CIRCULAR")
+    val shape: CoinShape,
 
     @Schema(description = "List of rulers/leaders depicted on the coin", example = "[\"Walking Liberty\"]")
     val rulers: List<String>

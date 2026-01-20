@@ -4,7 +4,8 @@ enum class MetalType {
     SILVER,
     GOLD,
     PLATINUM,
-    NICKEL;
+    NICKEL,
+    BASE_METAL;
 
     fun toSymbol(): String =
         when (this) {
@@ -12,6 +13,7 @@ enum class MetalType {
             SILVER -> "XAG"
             PLATINUM -> "XPT"
             NICKEL -> "XNIK"
+            BASE_METAL -> "BASE"
         }
 
     companion object {
@@ -21,6 +23,7 @@ enum class MetalType {
                 "XAG" -> SILVER
                 "XPT" -> PLATINUM
                 "XNIK" -> NICKEL
+                "BASE" -> BASE_METAL
                 else -> {
                     throw IllegalArgumentException("Unknown metal symbol: $symbol")
                 }

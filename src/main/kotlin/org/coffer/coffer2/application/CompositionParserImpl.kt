@@ -18,16 +18,19 @@ class CompositionParserImpl : CompositionParser {
             Regex("""0\.(\d{3,4})\s+(?:Gold|Silver|Platinum)""", RegexOption.IGNORE_CASE)
         )
 
-        private val METAL_KEYWORDS = mapOf(
+        private val PRECIOUS_METAL_KEYWORDS = mapOf(
             "gold" to MetalType.GOLD,
             "silver" to MetalType.SILVER,
-            "platinum" to MetalType.PLATINUM,
-            "nickel" to MetalType.NICKEL
+            "platinum" to MetalType.PLATINUM
         )
 
         private val EXCLUSION_KEYWORDS = listOf(
-            "plated", "clad", "bi-metallic", "bimetallic",
-            "copper-nickel", "brass", "bronze", "steel", "aluminum"
+            "plated", "clad", "bi-metallic", "bimetallic"
+        )
+
+        private val BASE_METAL_KEYWORDS = listOf(
+            "copper", "brass", "bronze", "steel", "aluminum", "aluminium",
+            "zinc", "iron", "tin", "nickel", "copper-nickel", "cupronickel"
         )
     }
 
@@ -41,9 +44,12 @@ class CompositionParserImpl : CompositionParser {
         val hasExclusion = EXCLUSION_KEYWORDS.any { text.contains(it) }
 
         val metalType = if (!hasExclusion) {
-            METAL_KEYWORDS.entries.firstOrNull { (keyword, _) ->
+            // First check for precious metals
+            PRECIOUS_METAL_KEYWORDS.entries.firstOrNull { (keyword, _) ->
                 text.contains(keyword)
             }?.value
+                // Then check for base metals
+                ?: if (BASE_METAL_KEYWORDS.any { text.contains(it) }) MetalType.BASE_METAL else null
         } else {
             null
         }

@@ -125,7 +125,7 @@ class PortfolioValuationServiceImpl(
                     MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
                     MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
                     MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
-                    MetalType.NICKEL -> {} // Non-precious metal, skip gram accumulation
+                    MetalType.NICKEL, MetalType.BASE_METAL -> {} // Non-precious metal, skip gram accumulation
                 }
 
                 totalValue = totalValue.add(totalPureMetal.multiply(pricePerGram))
@@ -181,11 +181,19 @@ class PortfolioValuationServiceImpl(
         // Bucket prices by time
         val bucketedPrices = bucketByInterval(allPrices, timeframe) { it.createdAt }
 
+        // Track last known price for each (issueId, grade) combination (forward-fill for missing data)
+        val lastKnownPrices = mutableMapOf<Pair<java.util.UUID, CoinGrade>, BigDecimal>()
+
         val dataPoints = bucketedPrices.map { (bucketTime, pricesInBucket) ->
             // Get the last price for each (issueId, grade) combination in this bucket
-            val priceMap = pricesInBucket
+            val bucketPriceMap = pricesInBucket
                 .groupBy { it.issueId to it.grade }
                 .mapValues { (_, prices) -> prices.last().price }
+
+            // Update last known prices with any new prices from this bucket
+            bucketPriceMap.forEach { (key, price) ->
+                lastKnownPrices[key] = price
+            }
 
             var exactValue = BigDecimal.ZERO
             var minValue = BigDecimal.ZERO
@@ -195,11 +203,15 @@ class PortfolioValuationServiceImpl(
                 val quantity = BigDecimal(info.coin.quantity)
 
                 if (info.isExactMatch) {
-                    val price = priceMap[info.issueIds.first() to info.grade] ?: continue
+                    val key = info.issueIds.first() to info.grade
+                    // Use current bucket price, or fall back to last known price
+                    val price = bucketPriceMap[key] ?: lastKnownPrices[key] ?: continue
                     exactValue = exactValue.add(price.multiply(quantity))
                 } else {
                     val prices = info.issueIds.mapNotNull { issueId ->
-                        priceMap[issueId to info.grade]
+                        val key = issueId to info.grade
+                        // Use current bucket price, or fall back to last known price
+                        bucketPriceMap[key] ?: lastKnownPrices[key]
                     }
                     if (prices.isEmpty()) continue
 
