@@ -17,6 +17,8 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.nio.file.NoSuchFileException
+import java.nio.file.Path
 import java.util.UUID
 
 @Service
@@ -91,9 +93,15 @@ class CoinService(
     }
 
     @Transactional(readOnly = true)
-    fun getImageContent(coinId: UUID, imageId: UUID): Pair<CoinImage, java.nio.file.Path>? {
+    fun getImageContent(coinId: UUID, imageId: UUID): Pair<CoinImage, Path>? {
         val image = getCoinImage(coinId, imageId) ?: return null
-        val path = imageStorageService.retrieve(image.storageKey)
+        val path: Path
+        try {
+            path = imageStorageService.retrieve(image.storageKey)
+        } catch (e: NoSuchFileException) {
+            logger.warn(e) { "Image not found in storage: ${image.storageKey} for coin $coinId" }
+            return null
+        }
         return image to path
     }
 

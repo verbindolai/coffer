@@ -1,7 +1,5 @@
-package org.coffer.coffer2.application.valuation
+package org.coffer.coffer2.domain
 
-import org.coffer.coffer2.domain.MetalType
-import org.coffer.coffer2.domain.ValuationTimeframe
 import org.coffer.coffer2.domain.coin.CoinGrade
 import java.math.BigDecimal
 import java.time.ZonedDateTime

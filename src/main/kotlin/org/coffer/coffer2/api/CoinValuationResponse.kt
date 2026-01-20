@@ -1,11 +1,11 @@
 package org.coffer.coffer2.api
 
 import io.swagger.v3.oas.annotations.media.Schema
-import org.coffer.coffer2.application.valuation.CoinValuationResult
-import org.coffer.coffer2.application.valuation.IssueValuationPoint
-import org.coffer.coffer2.application.valuation.IssueValuationResult
-import org.coffer.coffer2.application.valuation.MetalValuationPoint
-import org.coffer.coffer2.application.valuation.MetalValuationResult
+import org.coffer.coffer2.domain.CoinValuationResult
+import org.coffer.coffer2.domain.IssueValuationPoint
+import org.coffer.coffer2.domain.IssueValuationResult
+import org.coffer.coffer2.domain.MetalValuationPoint
+import org.coffer.coffer2.domain.MetalValuationResult
 import java.math.BigDecimal
 import java.time.Instant
 

@@ -32,65 +32,47 @@ class FileSystemImageStorage(
     }
 
     override fun store(inputStream: InputStream, fileName: String, contentType: String): String {
-        try {
-            if (!storageProperties.allowedContentTypes.contains(contentType)) {
-                throw kotlin.IllegalArgumentException("Content type $contentType is not allowed")
-            }
-
-            val extension = getFileExtension(fileName)
-            val storageKey = generateStorageKey(extension)
-            val destinationPath = resolveStoragePath(storageKey)
-
-            // Create parent directories if they don't exist
-            Files.createDirectories(destinationPath.parent)
-
-            // Copy the file
-            Files.copy(inputStream, destinationPath, StandardCopyOption.REPLACE_EXISTING)
-
-            logger.debug("Stored file at: ${destinationPath.toAbsolutePath()}")
-            return storageKey
-
-        } catch (e: Exception) {
-            logger.error("Failed to store file: $fileName", e)
-            throw kotlin.RuntimeException("Failed to store file", e)
+        if (!storageProperties.allowedContentTypes.contains(contentType)) {
+            throw IllegalArgumentException("Content type $contentType is not allowed")
         }
+
+        val extension = getFileExtension(fileName)
+        val storageKey = generateStorageKey(extension)
+        val destinationPath = resolveStoragePath(storageKey)
+
+        // Create parent directories if they don't exist
+        Files.createDirectories(destinationPath.parent)
+
+        // Copy the file
+        Files.copy(inputStream, destinationPath, StandardCopyOption.REPLACE_EXISTING)
+
+        logger.debug("Stored file at: ${destinationPath.toAbsolutePath()}")
+        return storageKey
     }
 
     override fun retrieve(storageKey: String): Path {
-        try {
-            val filePath = resolveStoragePath(storageKey)
+        val filePath = resolveStoragePath(storageKey)
 
-            if (!Files.exists(filePath)) {
-                throw NoSuchFileException(filePath.toFile(), reason = "File not found: $storageKey")
-            }
-
-            if (!Files.isReadable(filePath)) {
-                throw AccessDeniedException(filePath.toFile(), reason = "Cannot read file: $storageKey")
-            }
-
-            return filePath
-
-        } catch (e: Exception) {
-            logger.error("Failed to retrieve file: $storageKey", e)
-            throw kotlin.RuntimeException("Failed to retrieve file", e)
+        if (!Files.exists(filePath)) {
+            throw NoSuchFileException(filePath.toFile(), reason = "File not found: $storageKey")
         }
+
+        if (!Files.isReadable(filePath)) {
+            throw AccessDeniedException(filePath.toFile(), reason = "Cannot read file: $storageKey")
+        }
+
+        return filePath
     }
 
     override fun delete(storageKey: String) {
-        try {
-            val filePath = resolveStoragePath(storageKey)
+        val filePath = resolveStoragePath(storageKey)
 
-            if (Files.exists(filePath)) {
-                Files.delete(filePath)
-                logger.debug("Deleted file: ${filePath.toAbsolutePath()}")
+        if (Files.exists(filePath)) {
+            Files.delete(filePath)
+            logger.debug("Deleted file: ${filePath.toAbsolutePath()}")
 
-                // Try to delete empty parent directories
-                cleanupEmptyDirectories(filePath.parent)
-            }
-
-        } catch (e: Exception) {
-            logger.error("Failed to delete file: $storageKey", e)
-            throw kotlin.RuntimeException("Failed to delete file", e)
+            // Try to delete empty parent directories
+            cleanupEmptyDirectories(filePath.parent)
         }
     }
 

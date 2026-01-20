@@ -2,6 +2,15 @@ package org.coffer.coffer2.application.valuation
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.application.CoinRepositoryAdapter
+import org.coffer.coffer2.domain.CoinValuationResult
+import org.coffer.coffer2.domain.CollectorPricesResult
+import org.coffer.coffer2.domain.CurrentPricesResult
+import org.coffer.coffer2.domain.GradePriceResult
+import org.coffer.coffer2.domain.IssueValuationPoint
+import org.coffer.coffer2.domain.IssueValuationResult
+import org.coffer.coffer2.domain.MetalValuationPoint
+import org.coffer.coffer2.domain.MetalValuationResult
+import org.coffer.coffer2.domain.MetalValueResult
 import org.coffer.coffer2.domain.ValuationTimeframe
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinGrade
@@ -9,7 +18,6 @@ import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.coffer.coffer2.repository.CoinIssueRepository
 import org.coffer.coffer2.repository.IssuePriceEntity
 import org.coffer.coffer2.repository.IssuePriceRepository
-import org.coffer.coffer2.repository.MetalQuoteEntity
 import org.coffer.coffer2.repository.MetalQuoteRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -188,5 +196,94 @@ class CoinValuationServiceImpl(
         return grouped.entries
             .sortedBy { it.key }
             .map { it.key to it.value }
+    }
+
+    @Transactional(readOnly = true)
+    override fun getCurrentPrices(coinId: UUID): CurrentPricesResult {
+        logger.info { "Getting current prices for coin $coinId" }
+
+        val coin = coinRepositoryAdapter.findById(coinId)
+            ?: throw CoinNotFoundException(coinId)
+
+        val metalValue = getCurrentMetalValue(coin)
+        val collectorPrices = getCurrentCollectorPrices(coin)
+
+        // Determine currency (prefer metal, fall back to collector, default to USD)
+        val currency = metalValue?.let { "USD" }
+            ?: collectorPrices?.gradePrices?.firstOrNull()?.let { "USD" }
+            ?: "USD"
+
+        return CurrentPricesResult(
+            coinId = coinId,
+            currency = currency,
+            metalValue = metalValue,
+            collectorPrices = collectorPrices
+        )
+    }
+
+    private fun getCurrentMetalValue(coin: Coin): MetalValueResult? {
+        val metalType = coin.metalType ?: return null
+        val purity = coin.purity ?: return null
+
+        val pureMetalMass = coin.weightInGrams.multiply(purity)
+            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+
+        val latestQuote = metalQuoteRepository.findLatestByMetalType(metalType)
+            ?: return null
+
+        val totalValue = pureMetalMass.multiply(latestQuote.pricePerGram)
+            .setScale(2, RoundingMode.HALF_UP)
+
+        return MetalValueResult(
+            metalType = metalType,
+            pureMetalMassInGrams = pureMetalMass,
+            pricePerGram = latestQuote.pricePerGram,
+            totalValue = totalValue,
+            timestamp = latestQuote.quotedAt
+        )
+    }
+
+    private fun getCurrentCollectorPrices(coin: Coin): CollectorPricesResult? {
+        val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
+        if (issueIds.isEmpty()) {
+            return null
+        }
+
+        // Get latest prices for all grades from all linked issues
+        val allPrices = issueIds.flatMap { issueId ->
+            issuePriceRepository.findLatestPricesByIssueId(issueId)
+        }
+
+        if (allPrices.isEmpty()) {
+            return null
+        }
+
+        // Group by grade and get min/max prices
+        val pricesByGrade = allPrices
+            .groupBy { it.grade }
+            .mapValues { (_, prices) ->
+                val priceValues = prices.map { it.price }
+                Pair(priceValues.min(), priceValues.max())
+            }
+
+        // Convert to sorted list of grade prices with min/max
+        val gradePrices = pricesByGrade
+            .map { (grade, minMax) -> GradePriceResult(grade, minMax.first, minMax.second) }
+            .sortedBy { it.grade.ordinal }
+
+        // Check if coin's grade has an exact match (single price, not a range)
+        val coinGrade = coin.grade
+        val coinGradePrice = pricesByGrade[coinGrade]
+        val hasExactMatch = coinGrade != null && coinGradePrice != null && coinGradePrice.first == coinGradePrice.second
+
+        // Get the latest timestamp
+        val latestTimestamp = allPrices.maxOfOrNull { it.createdAt }
+
+        return CollectorPricesResult(
+            coinGrade = coinGrade,
+            hasExactMatch = hasExactMatch,
+            gradePrices = gradePrices,
+            timestamp = latestTimestamp
+        )
     }
 }

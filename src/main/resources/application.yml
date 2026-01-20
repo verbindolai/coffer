@@ -48,7 +48,7 @@ coffer:
     rate-limit-delay-ms: 100
     max-issues-per-coin: 10
   portfolio:
-    snapshot-cron: "0 */1 * * * *" # 0 0 9,15,22 * * 1-5
+    snapshot-cron: "0 0 9,15,22 * * 1-5" # 0 0 9,15,22 * * 1-5
 # Numista API configuration
 numista:
   api:

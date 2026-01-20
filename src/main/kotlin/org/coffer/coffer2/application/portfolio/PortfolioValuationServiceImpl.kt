@@ -92,11 +92,19 @@ class PortfolioValuationServiceImpl(
 
         val bucketedQuotes = bucketByInterval(allQuotes, timeframe) { it.quotedAt }
 
+        // Track last known price for each metal type (forward-fill for missing data)
+        val lastKnownPrices = mutableMapOf<MetalType, BigDecimal>()
+
         val dataPoints = bucketedQuotes.map { (bucketTime, quotesInBucket) ->
             // Get the last price for each metal type in this bucket
             val pricesByMetal = quotesInBucket
                 .groupBy { it.metalType }
                 .mapValues { (_, quotes) -> quotes.last().pricePerGram }
+
+            // Update last known prices with any new prices from this bucket
+            pricesByMetal.forEach { (metalType, price) ->
+                lastKnownPrices[metalType] = price
+            }
 
             // Calculate totals for this bucket
             var totalValue = BigDecimal.ZERO
@@ -106,7 +114,8 @@ class PortfolioValuationServiceImpl(
 
             for (coin in metalCoins) {
                 val metalType = coin.metalType!!
-                val pricePerGram = pricesByMetal[metalType] ?: continue
+                // Use current bucket price, or fall back to last known price
+                val pricePerGram = pricesByMetal[metalType] ?: lastKnownPrices[metalType] ?: continue
 
                 val pureMetalMass = coin.weightInGrams.multiply(coin.purity!!)
                     .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
