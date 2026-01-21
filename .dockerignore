@@ -1,0 +1,37 @@
+# Build outputs
+build/
+out/
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local data
+data/
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Documentation
+*.md
+docs/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Tests (not needed in production image)
+src/test/
