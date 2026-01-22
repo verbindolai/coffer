@@ -55,7 +55,6 @@ class IssueFetchService(
         // Convert Numista responses to domain models and save them
         val issues = numistaIssues.map { response -> response.toIssue() }
         val savedIssues = issueRepositoryAdapter.saveAll(issues)
-        logger.info { "Successfully saved ${savedIssues.size} new issues for coin type $numistaId" }
 
         // Link all issues to this coin
         val issueIds = savedIssues.mapNotNull { it.id }

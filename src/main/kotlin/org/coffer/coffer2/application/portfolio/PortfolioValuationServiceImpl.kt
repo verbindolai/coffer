@@ -39,8 +39,6 @@ class PortfolioValuationServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getValuation(timeframe: ValuationTimeframe): PortfolioValuationResult {
-        logger.info { "Getting portfolio valuation for timeframe ${timeframe.code}" }
-
         return if (timeframe in REAL_TIME_TIMEFRAMES) {
             computeRealTimeValuation(timeframe)
         } else {

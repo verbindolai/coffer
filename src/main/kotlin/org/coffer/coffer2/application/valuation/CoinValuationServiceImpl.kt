@@ -38,8 +38,6 @@ class CoinValuationServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getValuation(coinId: UUID, timeframe: ValuationTimeframe): CoinValuationResult {
-        logger.info { "Getting valuation for coin $coinId with timeframe ${timeframe.code}" }
-
         val coin = coinRepositoryAdapter.findById(coinId)
             ?: throw CoinNotFoundException(coinId)
 
