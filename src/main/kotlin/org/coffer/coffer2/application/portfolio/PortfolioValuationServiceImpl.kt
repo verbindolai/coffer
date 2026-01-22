@@ -235,6 +235,7 @@ class PortfolioValuationServiceImpl(
 
     /**
      * Computes valuation from stored snapshots for longer timeframes (1w, 1m, 1y, max).
+     * Appends a live data point at the current time to avoid stale chart endings.
      */
     private fun computeSnapshotValuation(timeframe: ValuationTimeframe): PortfolioValuationResult {
         val now = ZonedDateTime.now()
@@ -246,7 +247,9 @@ class PortfolioValuationServiceImpl(
             portfolioSnapshotRepository.findAllOrderBySnapshotDateAsc()
         }
 
-        if (snapshots.isEmpty()) {
+        val coins = coinRepositoryAdapter.findAll()
+
+        if (snapshots.isEmpty() && coins.isEmpty()) {
             return emptyValuationResult(timeframe)
         }
 
@@ -282,15 +285,121 @@ class PortfolioValuationServiceImpl(
             )
         }
 
+        // Append live data point computed from current state
+        val liveMetalPoint = computeLiveMetalPoint(coins, now)
+        val liveCollectorPoint = computeLiveCollectorPoint(coins, now)
+
+        val finalMetalPoints = if (liveMetalPoint != null) {
+            metalDataPoints + liveMetalPoint
+        } else {
+            metalDataPoints
+        }
+
+        val finalCollectorPoints = if (liveCollectorPoint != null) {
+            collectorDataPoints + liveCollectorPoint
+        } else {
+            collectorDataPoints
+        }
+
         return PortfolioValuationResult(
             timeframe = timeframe,
             currency = DEFAULT_CURRENCY,
-            metalValuation = if (metalDataPoints.isNotEmpty()) {
-                PortfolioMetalValuationResult(metalDataPoints)
+            metalValuation = if (finalMetalPoints.isNotEmpty()) {
+                PortfolioMetalValuationResult(finalMetalPoints)
             } else null,
-            collectorValuation = if (collectorDataPoints.isNotEmpty()) {
-                PortfolioCollectorValuationResult(collectorDataPoints)
+            collectorValuation = if (finalCollectorPoints.isNotEmpty()) {
+                PortfolioCollectorValuationResult(finalCollectorPoints)
             } else null
+        )
+    }
+
+    /**
+     * Computes a live metal valuation point from current coin state and latest metal quotes.
+     */
+    private fun computeLiveMetalPoint(coins: List<Coin>, now: ZonedDateTime): PortfolioMetalPoint? {
+        val metalCoins = coins.filter { it.metalType != null && it.purity != null }
+        if (metalCoins.isEmpty()) return null
+
+        val metalPrices = mutableMapOf<MetalType, BigDecimal>()
+        MetalType.entries.forEach { metalType ->
+            metalQuoteRepository.findLatestByMetalType(metalType)?.let {
+                metalPrices[metalType] = it.pricePerGram
+            }
+        }
+        if (metalPrices.isEmpty()) return null
+
+        var totalValue = BigDecimal.ZERO
+        var goldGrams = BigDecimal.ZERO
+        var silverGrams = BigDecimal.ZERO
+        var platinumGrams = BigDecimal.ZERO
+
+        for (coin in metalCoins) {
+            val metalType = coin.metalType!!
+            val pricePerGram = metalPrices[metalType] ?: continue
+
+            val pureMetalMass = coin.weightInGrams.multiply(coin.purity!!)
+                .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+            val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
+
+            when (metalType) {
+                MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
+                MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
+                MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
+                MetalType.NICKEL, MetalType.BASE_METAL -> {}
+            }
+
+            totalValue = totalValue.add(totalPureMetal.multiply(pricePerGram))
+        }
+
+        return PortfolioMetalPoint(
+            timestamp = now,
+            totalValue = totalValue.setScale(2, RoundingMode.HALF_UP),
+            goldGrams = goldGrams.setScale(6, RoundingMode.HALF_UP),
+            silverGrams = silverGrams.setScale(6, RoundingMode.HALF_UP),
+            platinumGrams = platinumGrams.setScale(6, RoundingMode.HALF_UP)
+        )
+    }
+
+    /**
+     * Computes a live collector valuation point from current coin state and latest issue prices.
+     */
+    private fun computeLiveCollectorPoint(coins: List<Coin>, now: ZonedDateTime): PortfolioCollectorPoint? {
+        var exactValue = BigDecimal.ZERO
+        var minValue = BigDecimal.ZERO
+        var maxValue = BigDecimal.ZERO
+
+        for (coin in coins) {
+            val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
+            if (issueIds.isEmpty()) continue
+
+            val grade = coin.grade ?: CoinGrade.VERY_FINE
+
+            val prices = issueIds.mapNotNull { issueId ->
+                issuePriceRepository.findLatestByIssueIdAndGrade(issueId, grade)?.price
+            }
+            if (prices.isEmpty()) continue
+
+            val quantity = BigDecimal(coin.quantity)
+
+            if (issueIds.size == 1) {
+                val price = prices.first()
+                exactValue = exactValue.add(price.multiply(quantity))
+            } else {
+                val min = prices.minOrNull() ?: continue
+                val max = prices.maxOrNull() ?: continue
+                minValue = minValue.add(min.multiply(quantity))
+                maxValue = maxValue.add(max.multiply(quantity))
+            }
+        }
+
+        val hasValues = exactValue > BigDecimal.ZERO || minValue > BigDecimal.ZERO || maxValue > BigDecimal.ZERO
+        if (!hasValues) return null
+
+        return PortfolioCollectorPoint(
+            timestamp = now,
+            exactValue = if (exactValue > BigDecimal.ZERO) exactValue.setScale(2, RoundingMode.HALF_UP) else null,
+            minValue = if (minValue > BigDecimal.ZERO) minValue.setScale(2, RoundingMode.HALF_UP) else null,
+            maxValue = if (maxValue > BigDecimal.ZERO) maxValue.setScale(2, RoundingMode.HALF_UP) else null
         )
     }
 

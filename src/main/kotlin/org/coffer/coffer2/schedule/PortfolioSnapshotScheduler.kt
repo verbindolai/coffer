@@ -12,10 +12,10 @@ class PortfolioSnapshotScheduler(
     private val logger = KotlinLogging.logger {}
 
     /**
-     * Creates a daily portfolio snapshot at end of trading day.
-     * Default: 6 PM daily, configurable via coffer.portfolio.snapshot-cron
+     * Creates portfolio snapshots on a configurable schedule.
+     * Default: 9 AM, 3 PM, 10 PM daily, configurable via coffer.portfolio.snapshot-cron
      */
-    @Scheduled(cron = "\${coffer.portfolio.snapshot-cron:0 0 18 * * *}")
+    @Scheduled(cron = "\${coffer.portfolio.snapshot-cron:0 0 9,15,22 * * *}")
     fun createDailySnapshot() {
         logger.info { "Creating daily portfolio snapshot" }
         try {

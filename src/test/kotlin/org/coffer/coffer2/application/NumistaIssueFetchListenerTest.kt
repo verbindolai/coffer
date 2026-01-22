@@ -4,6 +4,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.coffer.coffer2.application.issue.IssueFetchService
+import org.coffer.coffer2.application.issueprice.IssuePriceFetchService
+import org.coffer.coffer2.application.portfolio.PortfolioSnapshotService
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
 import java.util.UUID
 import kotlin.test.Test
@@ -11,7 +13,9 @@ import kotlin.test.Test
 class NumistaIssueFetchListenerTest {
 
     private val issueFetchService = mockk<IssueFetchService>()
-    private val listener = NumistaIssueFetchListener(issueFetchService)
+    private val issuePriceFetchService = mockk<IssuePriceFetchService>(relaxed = true)
+    private val portfolioSnapshotService = mockk<PortfolioSnapshotService>(relaxed = true)
+    private val listener = NumistaIssueFetchListener(issueFetchService, issuePriceFetchService, portfolioSnapshotService)
 
     @Test
     fun `should call fetch service when coin created with valid numistaId`() {

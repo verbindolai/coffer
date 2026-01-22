@@ -6,6 +6,8 @@ import org.coffer.coffer2.application.coinimage.CoinImageRepositoryAdapter
 import org.coffer.coffer2.application.shared.ImageStorageService
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinCreatedEvent
+import org.coffer.coffer2.domain.coin.CoinDeletedEvent
+import org.coffer.coffer2.domain.coin.CoinUpdatedEvent
 import org.coffer.coffer2.domain.coin.CoinImage
 import org.coffer.coffer2.domain.coin.CoinSide
 import org.coffer.coffer2.domain.coin.CreateCoinCommand
@@ -53,6 +55,7 @@ class CoinService(
         val updatedCoin = command.toCoin(existingCoin)
         val savedCoin = coinRepository.save(updatedCoin)
         logger.info { "Coin updated with id ${savedCoin.id}" }
+        applicationEventPublisher.publishEvent(CoinUpdatedEvent(savedCoin.id))
         return savedCoin
     }
 
@@ -63,6 +66,7 @@ class CoinService(
         }
         coinRepository.deleteById(id)
         logger.info { "Coin deleted with id $id" }
+        applicationEventPublisher.publishEvent(CoinDeletedEvent(id))
     }
 
     @Transactional(readOnly = true)

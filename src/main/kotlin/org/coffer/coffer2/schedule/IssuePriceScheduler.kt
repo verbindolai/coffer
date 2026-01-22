@@ -19,9 +19,9 @@ class IssuePriceScheduler(
 
     /**
      * Updates all coin prices on the configured schedule.
-     * Default: daily at 2 AM
+     * Default: daily at 2 AM, configurable via coffer.issue-prices.update-interval-cron
      */
-    @Scheduled(cron = "\${coffer.issue-prices.update-interval-cron}")
+    @Scheduled(cron = "\${coffer.issue-prices.update-interval-cron:0 0 2 * * *}")
     fun updateAllCoins() {
         logger.info { "Starting issue price update for all coins" }
         logger.info { "Config: batchSize=${issuePriceProperties.batchSize}" }

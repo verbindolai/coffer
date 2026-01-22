@@ -38,17 +38,17 @@ coffer:
     max-file-size-bytes: 10485760  # 10MB
     allowed-content-types: image/jpeg,image/png,image/webp
   metal-quotes:
-    update-interval-cron: "0 */5 * * * 1-5"
+    update-interval-cron: "${METAL_QUOTES_CRON:0 */5 * * * 1-5}"
     tracked-metal-codes:
       - XAG
       - XAU
   issue-prices:
-    update-interval-cron: "0 */5 * * * 1-5"  # Daily at 2 AM
+    update-interval-cron: "${ISSUE_PRICES_CRON:0 0 2 * * *}"  # Daily at 2 AM
     batch-size: 50
     rate-limit-delay-ms: 100
     max-issues-per-coin: 10
   portfolio:
-    snapshot-cron: "0 0 9,15,22 * * 1-5" # 0 0 9,15,22 * * 1-5
+    snapshot-cron: "${PORTFOLIO_SNAPSHOT_CRON:0 0 9,15,22 * * *}"  # 9 AM, 3 PM, 10 PM daily
 # Numista API configuration
 numista:
   api:
