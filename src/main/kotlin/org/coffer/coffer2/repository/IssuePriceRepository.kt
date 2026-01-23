@@ -83,6 +83,24 @@ interface IssuePriceRepository : JpaRepository<IssuePriceEntity, UUID> {
     ): List<IssuePriceEntity>
 
     /**
+     * Finds the latest price before a given time for each issue ID at a specific grade.
+     * Used to seed forward-fill with the last known price before a time window.
+     */
+    @Query(value = """
+        SELECT DISTINCT ON (ip.issue_id) ip.*
+        FROM issue_prices ip
+        WHERE ip.issue_id IN :issueIds
+        AND ip.grade = CAST(:grade AS varchar)
+        AND ip.created_at < :before
+        ORDER BY ip.issue_id, ip.created_at DESC
+    """, nativeQuery = true)
+    fun findLatestBeforeByIssueIdsAndGrade(
+        issueIds: List<UUID>,
+        grade: CoinGrade,
+        before: ZonedDateTime
+    ): List<IssuePriceEntity>
+
+    /**
      * Finds all historical prices for issues (all grades).
      */
     @Query("""

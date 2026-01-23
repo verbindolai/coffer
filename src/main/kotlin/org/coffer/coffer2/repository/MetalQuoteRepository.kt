@@ -35,4 +35,16 @@ interface MetalQuoteRepository : JpaRepository<MetalQuoteEntity, UUID> {
         LIMIT 1
     """)
     fun findLatestByMetalType(metalType: MetalType): MetalQuoteEntity?
+
+    /**
+     * Finds the latest quote before a given time for each metal type.
+     * Used to seed forward-fill with the last known price before a time window.
+     */
+    @Query(value = """
+        SELECT DISTINCT ON (mq.metal_type) mq.*
+        FROM metal_quotes mq
+        WHERE mq.quoted_at < :before
+        ORDER BY mq.metal_type, mq.quoted_at DESC
+    """, nativeQuery = true)
+    fun findLatestBefore(before: ZonedDateTime): List<MetalQuoteEntity>
 }
