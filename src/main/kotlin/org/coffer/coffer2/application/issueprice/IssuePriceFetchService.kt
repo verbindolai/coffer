@@ -115,7 +115,7 @@ class IssuePriceFetchService(
 
         // Skip if already processed in this transaction (within-transaction deduplication)
         if (processedIssueIds?.contains(issueId) == true) {
-            logger.info { "Issue $issueId already processed in this run, skipping" }
+            logger.debug { "Issue $issueId already processed in this run, skipping" }
             return true
         }
 
@@ -125,7 +125,7 @@ class IssuePriceFetchService(
             val today = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
             val lastAttemptDay = lastAttempt.truncatedTo(ChronoUnit.DAYS)
             if (!lastAttemptDay.isBefore(today)) {
-                logger.info { "Issue $issueId already attempted today, skipping" }
+                logger.debug { "Issue $issueId already attempted today, skipping" }
                 return true
             }
         }

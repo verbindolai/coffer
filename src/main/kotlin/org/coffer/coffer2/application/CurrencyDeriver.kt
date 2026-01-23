@@ -35,18 +35,12 @@ object CurrencyDeriver {
     )
 
     fun derive(issuerCode: String?, valueText: String?): String? {
-        valueText?.lowercase()?.let { text ->
-            VALUE_TEXT_CURRENCIES.entries.forEach { (keyword, currency) ->
-                if (text.contains(keyword)) {
-                    return currency
-                }
-            }
+        val textLower = valueText?.lowercase()
+        if (textLower != null) {
+            VALUE_TEXT_CURRENCIES.entries.firstOrNull { (keyword, _) ->
+                textLower.contains(keyword)
+            }?.let { return it.value }
         }
-
-        issuerCode?.lowercase()?.let { code ->
-            COUNTRY_TO_CURRENCY[code]?.let { return it }
-        }
-
-        return null
+        return issuerCode?.lowercase()?.let { COUNTRY_TO_CURRENCY[it] }
     }
 }

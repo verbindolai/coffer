@@ -4,13 +4,14 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.application.CoinRepositoryAdapter
 import org.coffer.coffer2.domain.MetalType
 import org.coffer.coffer2.domain.ValuationTimeframe
+import org.coffer.coffer2.domain.bucketByInterval
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.repository.CoinIssueRepository
 import org.coffer.coffer2.repository.IssuePriceRepository
 import org.coffer.coffer2.repository.MetalQuoteRepository
-import org.coffer.coffer2.repository.PortfolioSnapshotEntity
 import org.coffer.coffer2.repository.PortfolioSnapshotRepository
+import org.coffer.coffer2.util.MetalValuationCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -145,39 +146,18 @@ class PortfolioValuationServiceImpl(
         pricesByMetal: Map<MetalType, BigDecimal>,
         timestamp: ZonedDateTime
     ): PortfolioMetalPoint? {
-        var totalValue = BigDecimal.ZERO
-        var goldGrams = BigDecimal.ZERO
-        var silverGrams = BigDecimal.ZERO
-        var platinumGrams = BigDecimal.ZERO
+        val agg = MetalValuationCalculator.aggregateMetalValues(
+            metalCoins, pricesByMetal
+        ) { !it.createdAt.isAfter(timestamp) }
 
-        for (coin in metalCoins) {
-            if (coin.createdAt.isAfter(timestamp)) continue
-
-            val metalType = coin.metalType!!
-            val pricePerGram = pricesByMetal[metalType] ?: continue
-
-            val pureMetalMass = coin.weightInGrams.multiply(coin.purity!!)
-                .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
-            val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
-
-            when (metalType) {
-                MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
-                MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
-                MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
-                MetalType.NICKEL, MetalType.BASE_METAL -> {}
-            }
-
-            totalValue = totalValue.add(totalPureMetal.multiply(pricePerGram))
-        }
-
-        if (totalValue == BigDecimal.ZERO) return null
+        if (agg.totalValue.compareTo(BigDecimal.ZERO) == 0) return null
 
         return PortfolioMetalPoint(
             timestamp = timestamp,
-            totalValue = totalValue.setScale(2, RoundingMode.HALF_UP),
-            goldGrams = goldGrams.setScale(6, RoundingMode.HALF_UP),
-            silverGrams = silverGrams.setScale(6, RoundingMode.HALF_UP),
-            platinumGrams = platinumGrams.setScale(6, RoundingMode.HALF_UP)
+            totalValue = agg.totalValue,
+            goldGrams = agg.goldGrams,
+            silverGrams = agg.silverGrams,
+            platinumGrams = agg.platinumGrams
         )
     }
 
@@ -332,7 +312,7 @@ class PortfolioValuationServiceImpl(
                     maxValue = maxValue.add(value)
                 } else {
                     // No collector price available: use metal value as fallback
-                    val metalValue = computeCoinMetalValue(info.coin, metalPrices)
+                    val metalValue = MetalValuationCalculator.coinMetalValue(info.coin, metalPrices)
                     if (metalValue != null) {
                         minValue = minValue.add(metalValue)
                         maxValue = maxValue.add(metalValue)
@@ -343,11 +323,11 @@ class PortfolioValuationServiceImpl(
                     priceMap[issueId to info.grade]
                 }
                 if (prices.isNotEmpty()) {
-                    minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
-                    maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
+                    minValue = minValue.add(prices.min().multiply(quantity))
+                    maxValue = maxValue.add(prices.max().multiply(quantity))
                 } else {
                     // No collector prices available: use metal value as fallback
-                    val metalValue = computeCoinMetalValue(info.coin, metalPrices)
+                    val metalValue = MetalValuationCalculator.coinMetalValue(info.coin, metalPrices)
                     if (metalValue != null) {
                         minValue = minValue.add(metalValue)
                         maxValue = maxValue.add(metalValue)
@@ -359,7 +339,7 @@ class PortfolioValuationServiceImpl(
         // For coins without collector data, use metal value as fallback
         for (coin in coinsWithoutCollector) {
             if (coin.createdAt.isAfter(timestamp)) continue
-            val metalValue = computeCoinMetalValue(coin, metalPrices) ?: continue
+            val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices) ?: continue
             minValue = minValue.add(metalValue)
             maxValue = maxValue.add(metalValue)
         }
@@ -373,17 +353,6 @@ class PortfolioValuationServiceImpl(
             minValue = minValue.setScale(2, RoundingMode.HALF_UP),
             maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
-    }
-
-    private fun computeCoinMetalValue(coin: Coin, metalPrices: Map<MetalType, BigDecimal>): BigDecimal? {
-        val metalType = coin.metalType ?: return null
-        val purity = coin.purity ?: return null
-        val pricePerGram = metalPrices[metalType] ?: return null
-
-        val pureMetalMass = coin.weightInGrams.multiply(purity)
-            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
-        val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
-        return totalPureMetal.multiply(pricePerGram)
     }
 
     /**
@@ -407,7 +376,8 @@ class PortfolioValuationServiceImpl(
         }
 
         // Bucket snapshots by timeframe interval
-        val bucketedSnapshots = bucketSnapshotsByInterval(snapshots, timeframe)
+        val zone = ZoneId.systemDefault()
+        val bucketedSnapshots = bucketByInterval(snapshots, timeframe) { it.snapshotDate.atStartOfDay(zone) }
 
         val metalDataPoints = bucketedSnapshots.mapNotNull { (bucketTime, snapshotsInBucket) ->
             val lastSnapshot = snapshotsInBucket.last()
@@ -466,9 +436,6 @@ class PortfolioValuationServiceImpl(
         )
     }
 
-    /**
-     * Computes a live metal valuation point from current coin state and latest metal quotes.
-     */
     private fun computeLiveMetalPoint(coins: List<Coin>, now: ZonedDateTime): PortfolioMetalPoint? {
         val metalCoins = coins.filter { it.metalType != null && it.purity != null }
         if (metalCoins.isEmpty()) return null
@@ -481,35 +448,14 @@ class PortfolioValuationServiceImpl(
         }
         if (metalPrices.isEmpty()) return null
 
-        var totalValue = BigDecimal.ZERO
-        var goldGrams = BigDecimal.ZERO
-        var silverGrams = BigDecimal.ZERO
-        var platinumGrams = BigDecimal.ZERO
-
-        for (coin in metalCoins) {
-            val metalType = coin.metalType!!
-            val pricePerGram = metalPrices[metalType] ?: continue
-
-            val pureMetalMass = coin.weightInGrams.multiply(coin.purity!!)
-                .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
-            val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
-
-            when (metalType) {
-                MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
-                MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
-                MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
-                MetalType.NICKEL, MetalType.BASE_METAL -> {}
-            }
-
-            totalValue = totalValue.add(totalPureMetal.multiply(pricePerGram))
-        }
+        val agg = MetalValuationCalculator.aggregateMetalValues(metalCoins, metalPrices)
 
         return PortfolioMetalPoint(
             timestamp = now,
-            totalValue = totalValue.setScale(2, RoundingMode.HALF_UP),
-            goldGrams = goldGrams.setScale(6, RoundingMode.HALF_UP),
-            silverGrams = silverGrams.setScale(6, RoundingMode.HALF_UP),
-            platinumGrams = platinumGrams.setScale(6, RoundingMode.HALF_UP)
+            totalValue = agg.totalValue,
+            goldGrams = agg.goldGrams,
+            silverGrams = agg.silverGrams,
+            platinumGrams = agg.platinumGrams
         )
     }
 
@@ -534,7 +480,7 @@ class PortfolioValuationServiceImpl(
 
             if (issueIds.isEmpty()) {
                 // No collector data: use metal value as fallback
-                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
                 if (metalValue != null) {
                     minValue = minValue.add(metalValue)
                     maxValue = maxValue.add(metalValue)
@@ -549,7 +495,7 @@ class PortfolioValuationServiceImpl(
             }
             if (prices.isEmpty()) {
                 // No prices found for issues: use metal value as fallback
-                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
                 if (metalValue != null) {
                     minValue = minValue.add(metalValue)
                     maxValue = maxValue.add(metalValue)
@@ -562,8 +508,8 @@ class PortfolioValuationServiceImpl(
                 minValue = minValue.add(price)
                 maxValue = maxValue.add(price)
             } else {
-                minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
-                maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
+                minValue = minValue.add(prices.min().multiply(quantity))
+                maxValue = maxValue.add(prices.max().multiply(quantity))
             }
         }
 
@@ -576,40 +522,6 @@ class PortfolioValuationServiceImpl(
             minValue = minValue.setScale(2, RoundingMode.HALF_UP),
             maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
-    }
-
-    private fun <T> bucketByInterval(
-        items: List<T>,
-        timeframe: ValuationTimeframe,
-        timestampSelector: (T) -> ZonedDateTime
-    ): List<Pair<ZonedDateTime, List<T>>> {
-        if (items.isEmpty()) return emptyList()
-
-        val grouped = items.groupBy { item ->
-            timeframe.truncateToBucket(timestampSelector(item))
-        }
-
-        return grouped.entries
-            .sortedBy { it.key }
-            .map { it.key to it.value }
-    }
-
-    private fun bucketSnapshotsByInterval(
-        snapshots: List<PortfolioSnapshotEntity>,
-        timeframe: ValuationTimeframe
-    ): List<Pair<ZonedDateTime, List<PortfolioSnapshotEntity>>> {
-        if (snapshots.isEmpty()) return emptyList()
-
-        val zone = ZoneId.systemDefault()
-
-        val grouped = snapshots.groupBy { snapshot ->
-            val zonedTime = snapshot.snapshotDate.atStartOfDay(zone)
-            timeframe.truncateToBucket(zonedTime)
-        }
-
-        return grouped.entries
-            .sortedBy { it.key }
-            .map { it.key to it.value }
     }
 
     private fun emptyValuationResult(timeframe: ValuationTimeframe) = PortfolioValuationResult(

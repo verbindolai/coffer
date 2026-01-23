@@ -24,7 +24,7 @@ class IssuePriceScheduler(
     @Scheduled(cron = "\${coffer.issue-prices.update-interval-cron:0 0 2 * * *}")
     fun updateAllCoins() {
         logger.info { "Starting issue price update for all coins" }
-        logger.info { "Config: batchSize=${issuePriceProperties.batchSize}" }
+        logger.debug { "Config: batchSize=${issuePriceProperties.batchSize}" }
 
         try {
             issuePriceService.updatePricesForAllCoins()

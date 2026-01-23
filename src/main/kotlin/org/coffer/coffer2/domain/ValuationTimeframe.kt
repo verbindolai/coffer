@@ -62,3 +62,19 @@ enum class ValuationTimeframe(
                 ?: throw IllegalArgumentException("Unknown timeframe: $code. Valid values: ${entries.map { it.code }}")
     }
 }
+
+fun <T> bucketByInterval(
+    items: List<T>,
+    timeframe: ValuationTimeframe,
+    timestampSelector: (T) -> ZonedDateTime
+): List<Pair<ZonedDateTime, List<T>>> {
+    if (items.isEmpty()) return emptyList()
+
+    val grouped = items.groupBy { item ->
+        timeframe.truncateToBucket(timestampSelector(item))
+    }
+
+    return grouped.entries
+        .sortedBy { it.key }
+        .map { it.key to it.value }
+}

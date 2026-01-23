@@ -20,12 +20,7 @@ class PortfolioSnapshotScheduler(
         logger.info { "Creating daily portfolio snapshot" }
         try {
             val snapshot = portfolioSnapshotService.computeAndStoreSnapshot()
-            logger.info {
-                "Portfolio snapshot created: date=${snapshot.snapshotDate}, " +
-                "coins=${snapshot.totalCoins}, quantity=${snapshot.totalQuantity}, " +
-                "metalValue=${snapshot.metalValue}, collectorExact=${snapshot.collectorValueExact}, " +
-                "collectorMin=${snapshot.collectorValueMin}, collectorMax=${snapshot.collectorValueMax}"
-            }
+            logger.info { "Portfolio snapshot created for ${snapshot.snapshotDate}: ${snapshot.totalCoins} coins" }
         } catch (e: Exception) {
             logger.error(e) { "Failed to create portfolio snapshot" }
         }

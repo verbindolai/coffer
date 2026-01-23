@@ -2,6 +2,7 @@ package org.coffer.coffer2.application.valuation
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.coffer.coffer2.application.CoinRepositoryAdapter
+import org.coffer.coffer2.domain.bucketByInterval
 import org.coffer.coffer2.domain.CoinValuationResult
 import org.coffer.coffer2.domain.CollectorPricesResult
 import org.coffer.coffer2.domain.CurrentPricesResult
@@ -19,6 +20,7 @@ import org.coffer.coffer2.repository.CoinIssueRepository
 import org.coffer.coffer2.repository.IssuePriceEntity
 import org.coffer.coffer2.repository.IssuePriceRepository
 import org.coffer.coffer2.repository.MetalQuoteRepository
+import org.coffer.coffer2.util.MetalValuationCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -63,8 +65,7 @@ class CoinValuationServiceImpl(
         val metalType = coin.metalType ?: return null
         val purity = coin.purity ?: return null
 
-        val pureMetalMass = coin.weightInGrams.multiply(purity)
-            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+        val pureMetalMass = MetalValuationCalculator.pureMetalMass(coin.weightInGrams, purity)
 
         val quotes = if (startTime != null) {
             metalQuoteRepository.findByMetalTypeAndQuotedAtAfter(metalType, startTime)
@@ -173,32 +174,9 @@ class CoinValuationServiceImpl(
         }
     }
 
-    /**
-     * Groups items into time buckets based on the timeframe interval.
-     * Returns a sorted map of bucket start time -> items in that bucket.
-     * Buckets with no data are skipped (gaps are allowed).
-     */
-    private fun <T> bucketByInterval(
-        items: List<T>,
-        timeframe: ValuationTimeframe,
-        timestampSelector: (T) -> ZonedDateTime
-    ): List<Pair<ZonedDateTime, List<T>>> {
-        if (items.isEmpty()) return emptyList()
-
-        // Group items by their bucket
-        val grouped = items.groupBy { item ->
-            timeframe.truncateToBucket(timestampSelector(item))
-        }
-
-        // Sort by bucket time and return as list of pairs
-        return grouped.entries
-            .sortedBy { it.key }
-            .map { it.key to it.value }
-    }
-
     @Transactional(readOnly = true)
     override fun getCurrentPrices(coinId: UUID): CurrentPricesResult {
-        logger.info { "Getting current prices for coin $coinId" }
+        logger.debug { "Getting current prices for coin $coinId" }
 
         val coin = coinRepositoryAdapter.findById(coinId)
             ?: throw CoinNotFoundException(coinId)
@@ -223,8 +201,7 @@ class CoinValuationServiceImpl(
         val metalType = coin.metalType ?: return null
         val purity = coin.purity ?: return null
 
-        val pureMetalMass = coin.weightInGrams.multiply(purity)
-            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+        val pureMetalMass = MetalValuationCalculator.pureMetalMass(coin.weightInGrams, purity)
 
         val latestQuote = metalQuoteRepository.findLatestByMetalType(metalType)
             ?: return null

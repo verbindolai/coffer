@@ -108,9 +108,7 @@ class CoinControllerTest {
         val response = controller.createCoin(request)
 
         // Then
-        assertEquals(HttpStatus.CREATED, response.statusCode)
-        assertNotNull(response.body)
-        assertEquals("American Gold Eagle", response.body!!.title)
+        assertEquals("American Gold Eagle", response.title)
         verify(exactly = 1) { coinService.createCoin(any()) }
     }
 

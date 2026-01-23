@@ -10,6 +10,8 @@ import org.coffer.coffer2.repository.IssuePriceRepository
 import org.coffer.coffer2.repository.MetalQuoteRepository
 import org.coffer.coffer2.repository.PortfolioSnapshotEntity
 import org.coffer.coffer2.repository.PortfolioSnapshotRepository
+import org.coffer.coffer2.util.MetalAggregation
+import org.coffer.coffer2.util.MetalValuationCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -35,13 +37,13 @@ class PortfolioSnapshotServiceImpl(
 
     @Transactional
     override fun computeAndStoreSnapshot(): PortfolioSnapshotResult {
-        logger.info { "Computing portfolio snapshot" }
+        logger.debug { "Computing portfolio snapshot" }
 
         val coins = coinRepositoryAdapter.findAll()
         val today = LocalDate.now()
 
         if (coins.isEmpty()) {
-            logger.info { "No coins in portfolio, creating empty snapshot" }
+            logger.debug { "No coins in portfolio, creating empty snapshot" }
             return createAndSaveEmptySnapshot(today)
         }
 
@@ -113,13 +115,7 @@ class PortfolioSnapshotServiceImpl(
         return PortfolioSnapshotResult.from(portfolioSnapshotRepository.save(entity))
     }
 
-    private fun computeMetalValuation(coins: List<Coin>): MetalValuationAggregation {
-        var totalValue = BigDecimal.ZERO
-        var goldGrams = BigDecimal.ZERO
-        var silverGrams = BigDecimal.ZERO
-        var platinumGrams = BigDecimal.ZERO
-
-        // Get latest prices for each metal type
+    private fun computeMetalValuation(coins: List<Coin>): MetalAggregation {
         val metalPrices = mutableMapOf<MetalType, BigDecimal>()
         MetalType.entries.forEach { metalType ->
             metalQuoteRepository.findLatestByMetalType(metalType)?.let {
@@ -127,38 +123,7 @@ class PortfolioSnapshotServiceImpl(
             }
         }
 
-        for (coin in coins) {
-            val metalType = coin.metalType ?: continue
-            val purity = coin.purity ?: continue
-            val pricePerGram = metalPrices[metalType] ?: continue
-
-            // Calculate pure metal mass in grams
-            val pureMetalMass = coin.weightInGrams.multiply(purity)
-                .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
-
-            // Apply quantity multiplier
-            val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
-
-            // Accumulate by metal type (only precious metals tracked)
-            when (metalType) {
-                MetalType.GOLD -> goldGrams = goldGrams.add(totalPureMetal)
-                MetalType.SILVER -> silverGrams = silverGrams.add(totalPureMetal)
-                MetalType.PLATINUM -> platinumGrams = platinumGrams.add(totalPureMetal)
-                MetalType.NICKEL, MetalType.BASE_METAL -> {} // Non-precious metal, skip gram accumulation
-            }
-
-            // Calculate value
-            val coinMetalValue = totalPureMetal.multiply(pricePerGram)
-                .setScale(2, RoundingMode.HALF_UP)
-            totalValue = totalValue.add(coinMetalValue)
-        }
-
-        return MetalValuationAggregation(
-            totalValue = totalValue,
-            goldGrams = goldGrams.setScale(6, RoundingMode.HALF_UP),
-            silverGrams = silverGrams.setScale(6, RoundingMode.HALF_UP),
-            platinumGrams = platinumGrams.setScale(6, RoundingMode.HALF_UP)
-        )
+        return MetalValuationCalculator.aggregateMetalValues(coins, metalPrices)
     }
 
     private fun computeCollectorValuation(coins: List<Coin>): CollectorValuationAggregation {
@@ -179,7 +144,7 @@ class PortfolioSnapshotServiceImpl(
 
             if (issueIds.isEmpty()) {
                 // No collector data: use metal value as fallback
-                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
                 if (metalValue != null) {
                     minValue = minValue.add(metalValue)
                     maxValue = maxValue.add(metalValue)
@@ -196,7 +161,7 @@ class PortfolioSnapshotServiceImpl(
 
             if (prices.isEmpty()) {
                 // No prices found for issues: use metal value as fallback
-                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
                 if (metalValue != null) {
                     minValue = minValue.add(metalValue)
                     maxValue = maxValue.add(metalValue)
@@ -209,8 +174,8 @@ class PortfolioSnapshotServiceImpl(
                 minValue = minValue.add(price)
                 maxValue = maxValue.add(price)
             } else {
-                minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
-                maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
+                minValue = minValue.add(prices.min().multiply(quantity))
+                maxValue = maxValue.add(prices.max().multiply(quantity))
             }
         }
 
@@ -220,24 +185,6 @@ class PortfolioSnapshotServiceImpl(
             maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
     }
-
-    private fun computeCoinMetalValue(coin: Coin, metalPrices: Map<MetalType, BigDecimal>): BigDecimal? {
-        val metalType = coin.metalType ?: return null
-        val purity = coin.purity ?: return null
-        val pricePerGram = metalPrices[metalType] ?: return null
-
-        val pureMetalMass = coin.weightInGrams.multiply(purity)
-            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
-        val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
-        return totalPureMetal.multiply(pricePerGram)
-    }
-
-    private data class MetalValuationAggregation(
-        val totalValue: BigDecimal,
-        val goldGrams: BigDecimal,
-        val silverGrams: BigDecimal,
-        val platinumGrams: BigDecimal
-    )
 
     private data class CollectorValuationAggregation(
         val exactValue: BigDecimal,
