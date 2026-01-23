@@ -187,6 +187,7 @@ class PortfolioValuationServiceImpl(
         timeframe: ValuationTimeframe
     ): PortfolioCollectorValuationResult? {
         val now = ZonedDateTime.now()
+        if (coins.isEmpty()) return null
 
         val coinIssueInfos = coins.mapNotNull { coin ->
             val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
@@ -199,45 +200,87 @@ class PortfolioValuationServiceImpl(
             )
         }
 
-        if (coinIssueInfos.isEmpty()) return null
+        val coinsWithIssues = coinIssueInfos.map { it.coin.id }.toSet()
+        val coinsWithoutCollector = coins.filter { it.id !in coinsWithIssues }
 
         val allIssueIds = coinIssueInfos.flatMap { it.issueIds }.distinct()
 
-        // Seed last known prices from before the window start
+        // Seed last known issue prices from before the window start
         val lastKnownPrices = mutableMapOf<Pair<java.util.UUID, CoinGrade>, BigDecimal>()
-        val grades = coinIssueInfos.map { it.grade }.distinct()
-        for (grade in grades) {
-            val seedPrices = issuePriceRepository.findLatestBeforeByIssueIdsAndGrade(allIssueIds, grade, startTime)
-            seedPrices.forEach { entity ->
-                lastKnownPrices[entity.issueId to entity.grade] = entity.price
+        if (allIssueIds.isNotEmpty()) {
+            val grades = coinIssueInfos.map { it.grade }.distinct()
+            for (grade in grades) {
+                val seedPrices = issuePriceRepository.findLatestBeforeByIssueIdsAndGrade(allIssueIds, grade, startTime)
+                seedPrices.forEach { entity ->
+                    lastKnownPrices[entity.issueId to entity.grade] = entity.price
+                }
             }
         }
 
-        // Fetch prices within the time range
-        val allPrices = issuePriceRepository.findByIssueIdsAfter(allIssueIds, startTime)
+        // Seed last known metal prices from before the window start
+        val lastKnownMetalPrices = mutableMapOf<MetalType, BigDecimal>()
+        val seedMetalQuotes = metalQuoteRepository.findLatestBefore(startTime)
+        seedMetalQuotes.forEach { quote ->
+            lastKnownMetalPrices[quote.metalType] = quote.pricePerGram
+        }
 
-        val bucketedPrices = bucketByInterval(allPrices, timeframe) { it.createdAt }
+        // Fetch issue prices within the time range
+        val allIssuePrices = if (allIssueIds.isNotEmpty()) {
+            issuePriceRepository.findByIssueIdsAfter(allIssueIds, startTime)
+        } else emptyList()
+
+        // Fetch metal quotes within the time range
+        val allMetalQuotes = MetalType.entries.flatMap { metalType ->
+            metalQuoteRepository.findByMetalTypeAndQuotedAtAfter(metalType, startTime)
+        }
+
+        // Combine issue price and metal quote timestamps into unified buckets
+        data class TimestampedEvent(val timestamp: ZonedDateTime)
+        val allEvents = allIssuePrices.map { TimestampedEvent(it.createdAt) } +
+            allMetalQuotes.map { TimestampedEvent(it.quotedAt) }
+        val allBucketTimes = allEvents
+            .map { timeframe.truncateToBucket(it.timestamp) }
+            .distinct()
+            .sorted()
+
+        // Build lookup maps for issue prices and metal quotes by bucket
+        val issuePricesByBucket = bucketByInterval(allIssuePrices, timeframe) { it.createdAt }
+        val metalQuotesByBucket = bucketByInterval(allMetalQuotes, timeframe) { it.quotedAt }
+        val issuePriceBucketMap = issuePricesByBucket.toMap()
+        val metalQuoteBucketMap = metalQuotesByBucket.toMap()
 
         val dataPoints = mutableListOf<PortfolioCollectorPoint>()
         val bucketStartTime = timeframe.truncateToBucket(startTime)
 
         // Generate initial data point at window start using seeded prices
-        val firstBucketTime = bucketedPrices.firstOrNull()?.first
-        if (lastKnownPrices.isNotEmpty() && firstBucketTime != bucketStartTime) {
-            computeCollectorPoint(coinIssueInfos, lastKnownPrices, bucketStartTime)?.let { dataPoints.add(it) }
+        val firstBucketTime = allBucketTimes.firstOrNull()
+        if ((lastKnownPrices.isNotEmpty() || lastKnownMetalPrices.isNotEmpty()) && firstBucketTime != bucketStartTime) {
+            computeCollectorPoint(coinIssueInfos, lastKnownPrices, coinsWithoutCollector, lastKnownMetalPrices, bucketStartTime)?.let { dataPoints.add(it) }
         }
 
-        // Process bucketed prices within the window
-        for ((bucketTime, pricesInBucket) in bucketedPrices) {
-            val bucketPriceMap = pricesInBucket
-                .groupBy { it.issueId to it.grade }
-                .mapValues { (_, prices) -> prices.last().price }
-
-            bucketPriceMap.forEach { (key, price) ->
-                lastKnownPrices[key] = price
+        // Process all bucket times
+        for (bucketTime in allBucketTimes) {
+            // Update issue prices
+            issuePriceBucketMap[bucketTime]?.let { pricesInBucket ->
+                val bucketPriceMap = pricesInBucket
+                    .groupBy { it.issueId to it.grade }
+                    .mapValues { (_, prices) -> prices.last().price }
+                bucketPriceMap.forEach { (key, price) ->
+                    lastKnownPrices[key] = price
+                }
             }
 
-            computeCollectorPoint(coinIssueInfos, lastKnownPrices, bucketTime)?.let { dataPoints.add(it) }
+            // Update metal prices
+            metalQuoteBucketMap[bucketTime]?.let { quotesInBucket ->
+                quotesInBucket
+                    .groupBy { it.metalType }
+                    .mapValues { (_, quotes) -> quotes.last().pricePerGram }
+                    .forEach { (metalType, price) ->
+                        lastKnownMetalPrices[metalType] = price
+                    }
+            }
+
+            computeCollectorPoint(coinIssueInfos, lastKnownPrices, coinsWithoutCollector, lastKnownMetalPrices, bucketTime)?.let { dataPoints.add(it) }
         }
 
         // Append live data point at current time (only if it's in a new bucket)
@@ -252,9 +295,13 @@ class PortfolioValuationServiceImpl(
                     }
                 }
             }
-            if (livePrices.isNotEmpty()) {
-                computeCollectorPoint(coinIssueInfos, livePrices, now)?.let { dataPoints.add(it) }
+            val liveMetalPrices = mutableMapOf<MetalType, BigDecimal>()
+            MetalType.entries.forEach { metalType ->
+                metalQuoteRepository.findLatestByMetalType(metalType)?.let {
+                    liveMetalPrices[metalType] = it.pricePerGram
+                }
             }
+            computeCollectorPoint(coinIssueInfos, livePrices, coinsWithoutCollector, liveMetalPrices, now)?.let { dataPoints.add(it) }
         }
 
         return if (dataPoints.isNotEmpty()) {
@@ -265,39 +312,78 @@ class PortfolioValuationServiceImpl(
     private fun computeCollectorPoint(
         coinIssueInfos: List<CoinIssueInfo>,
         priceMap: Map<Pair<java.util.UUID, CoinGrade>, BigDecimal>,
+        coinsWithoutCollector: List<Coin>,
+        metalPrices: Map<MetalType, BigDecimal>,
         timestamp: ZonedDateTime
     ): PortfolioCollectorPoint? {
-        var exactValue = BigDecimal.ZERO
         var minValue = BigDecimal.ZERO
         var maxValue = BigDecimal.ZERO
 
         for (info in coinIssueInfos) {
+            if (info.coin.createdAt.isAfter(timestamp)) continue
             val quantity = BigDecimal(info.coin.quantity)
 
             if (info.isExactMatch) {
                 val key = info.issueIds.first() to info.grade
-                val price = priceMap[key] ?: continue
-                exactValue = exactValue.add(price.multiply(quantity))
+                val price = priceMap[key]
+                if (price != null) {
+                    val value = price.multiply(quantity)
+                    minValue = minValue.add(value)
+                    maxValue = maxValue.add(value)
+                } else {
+                    // No collector price available: use metal value as fallback
+                    val metalValue = computeCoinMetalValue(info.coin, metalPrices)
+                    if (metalValue != null) {
+                        minValue = minValue.add(metalValue)
+                        maxValue = maxValue.add(metalValue)
+                    }
+                }
             } else {
                 val prices = info.issueIds.mapNotNull { issueId ->
                     priceMap[issueId to info.grade]
                 }
-                if (prices.isEmpty()) continue
-
-                minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
-                maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
+                if (prices.isNotEmpty()) {
+                    minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
+                    maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
+                } else {
+                    // No collector prices available: use metal value as fallback
+                    val metalValue = computeCoinMetalValue(info.coin, metalPrices)
+                    if (metalValue != null) {
+                        minValue = minValue.add(metalValue)
+                        maxValue = maxValue.add(metalValue)
+                    }
+                }
             }
         }
 
-        val hasValues = exactValue > BigDecimal.ZERO || minValue > BigDecimal.ZERO || maxValue > BigDecimal.ZERO
+        // For coins without collector data, use metal value as fallback
+        for (coin in coinsWithoutCollector) {
+            if (coin.createdAt.isAfter(timestamp)) continue
+            val metalValue = computeCoinMetalValue(coin, metalPrices) ?: continue
+            minValue = minValue.add(metalValue)
+            maxValue = maxValue.add(metalValue)
+        }
+
+        val hasValues = minValue > BigDecimal.ZERO || maxValue > BigDecimal.ZERO
         if (!hasValues) return null
 
         return PortfolioCollectorPoint(
             timestamp = timestamp,
-            exactValue = if (exactValue > BigDecimal.ZERO) exactValue.setScale(2, RoundingMode.HALF_UP) else null,
-            minValue = if (minValue > BigDecimal.ZERO) minValue.setScale(2, RoundingMode.HALF_UP) else null,
-            maxValue = if (maxValue > BigDecimal.ZERO) maxValue.setScale(2, RoundingMode.HALF_UP) else null
+            exactValue = null,
+            minValue = minValue.setScale(2, RoundingMode.HALF_UP),
+            maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
+    }
+
+    private fun computeCoinMetalValue(coin: Coin, metalPrices: Map<MetalType, BigDecimal>): BigDecimal? {
+        val metalType = coin.metalType ?: return null
+        val purity = coin.purity ?: return null
+        val pricePerGram = metalPrices[metalType] ?: return null
+
+        val pureMetalMass = coin.weightInGrams.multiply(purity)
+            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+        val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
+        return totalPureMetal.multiply(pricePerGram)
     }
 
     /**
@@ -429,44 +515,66 @@ class PortfolioValuationServiceImpl(
 
     /**
      * Computes a live collector valuation point from current coin state and latest issue prices.
+     * Falls back to metal value for coins without collector data.
      */
     private fun computeLiveCollectorPoint(coins: List<Coin>, now: ZonedDateTime): PortfolioCollectorPoint? {
-        var exactValue = BigDecimal.ZERO
         var minValue = BigDecimal.ZERO
         var maxValue = BigDecimal.ZERO
 
+        val metalPrices = mutableMapOf<MetalType, BigDecimal>()
+        MetalType.entries.forEach { metalType ->
+            metalQuoteRepository.findLatestByMetalType(metalType)?.let {
+                metalPrices[metalType] = it.pricePerGram
+            }
+        }
+
         for (coin in coins) {
             val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
-            if (issueIds.isEmpty()) continue
+            val quantity = BigDecimal(coin.quantity)
+
+            if (issueIds.isEmpty()) {
+                // No collector data: use metal value as fallback
+                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                if (metalValue != null) {
+                    minValue = minValue.add(metalValue)
+                    maxValue = maxValue.add(metalValue)
+                }
+                continue
+            }
 
             val grade = coin.grade ?: CoinGrade.VERY_FINE
 
             val prices = issueIds.mapNotNull { issueId ->
                 issuePriceRepository.findLatestByIssueIdAndGrade(issueId, grade)?.price
             }
-            if (prices.isEmpty()) continue
-
-            val quantity = BigDecimal(coin.quantity)
+            if (prices.isEmpty()) {
+                // No prices found for issues: use metal value as fallback
+                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                if (metalValue != null) {
+                    minValue = minValue.add(metalValue)
+                    maxValue = maxValue.add(metalValue)
+                }
+                continue
+            }
 
             if (issueIds.size == 1) {
-                val price = prices.first()
-                exactValue = exactValue.add(price.multiply(quantity))
+                val price = prices.first().multiply(quantity)
+                minValue = minValue.add(price)
+                maxValue = maxValue.add(price)
             } else {
-                val min = prices.minOrNull() ?: continue
-                val max = prices.maxOrNull() ?: continue
-                minValue = minValue.add(min.multiply(quantity))
-                maxValue = maxValue.add(max.multiply(quantity))
+                minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
+                maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
             }
         }
 
-        val hasValues = exactValue > BigDecimal.ZERO || minValue > BigDecimal.ZERO || maxValue > BigDecimal.ZERO
+        val hasValues = minValue > BigDecimal.ZERO || maxValue > BigDecimal.ZERO
         if (!hasValues) return null
 
         return PortfolioCollectorPoint(
             timestamp = now,
-            exactValue = if (exactValue > BigDecimal.ZERO) exactValue.setScale(2, RoundingMode.HALF_UP) else null,
-            minValue = if (minValue > BigDecimal.ZERO) minValue.setScale(2, RoundingMode.HALF_UP) else null,
-            maxValue = if (maxValue > BigDecimal.ZERO) maxValue.setScale(2, RoundingMode.HALF_UP) else null
+            exactValue = null,
+            minValue = minValue.setScale(2, RoundingMode.HALF_UP),
+            maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
     }
 

@@ -162,13 +162,30 @@ class PortfolioSnapshotServiceImpl(
     }
 
     private fun computeCollectorValuation(coins: List<Coin>): CollectorValuationAggregation {
-        var exactValue = BigDecimal.ZERO
         var minValue = BigDecimal.ZERO
         var maxValue = BigDecimal.ZERO
 
+        // Get latest metal prices for fallback
+        val metalPrices = mutableMapOf<MetalType, BigDecimal>()
+        MetalType.entries.forEach { metalType ->
+            metalQuoteRepository.findLatestByMetalType(metalType)?.let {
+                metalPrices[metalType] = it.pricePerGram
+            }
+        }
+
         for (coin in coins) {
             val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
-            if (issueIds.isEmpty()) continue
+            val quantity = BigDecimal(coin.quantity)
+
+            if (issueIds.isEmpty()) {
+                // No collector data: use metal value as fallback
+                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                if (metalValue != null) {
+                    minValue = minValue.add(metalValue)
+                    maxValue = maxValue.add(metalValue)
+                }
+                continue
+            }
 
             val grade = coin.grade ?: CoinGrade.VERY_FINE
 
@@ -177,28 +194,42 @@ class PortfolioSnapshotServiceImpl(
                 issuePriceRepository.findLatestByIssueIdAndGrade(issueId, grade)?.price
             }
 
-            if (prices.isEmpty()) continue
-
-            val quantity = BigDecimal(coin.quantity)
+            if (prices.isEmpty()) {
+                // No prices found for issues: use metal value as fallback
+                val metalValue = computeCoinMetalValue(coin, metalPrices)
+                if (metalValue != null) {
+                    minValue = minValue.add(metalValue)
+                    maxValue = maxValue.add(metalValue)
+                }
+                continue
+            }
 
             if (issueIds.size == 1) {
-                // Exact match: single issue, use exact price
-                val price = prices.first()
-                exactValue = exactValue.add(price.multiply(quantity))
+                val price = prices.first().multiply(quantity)
+                minValue = minValue.add(price)
+                maxValue = maxValue.add(price)
             } else {
-                // Multiple issues: use min/max range
-                val min = prices.minOrNull() ?: continue
-                val max = prices.maxOrNull() ?: continue
-                minValue = minValue.add(min.multiply(quantity))
-                maxValue = maxValue.add(max.multiply(quantity))
+                minValue = minValue.add(prices.minOrNull()!!.multiply(quantity))
+                maxValue = maxValue.add(prices.maxOrNull()!!.multiply(quantity))
             }
         }
 
         return CollectorValuationAggregation(
-            exactValue = exactValue.setScale(2, RoundingMode.HALF_UP),
+            exactValue = BigDecimal.ZERO,
             minValue = minValue.setScale(2, RoundingMode.HALF_UP),
             maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
         )
+    }
+
+    private fun computeCoinMetalValue(coin: Coin, metalPrices: Map<MetalType, BigDecimal>): BigDecimal? {
+        val metalType = coin.metalType ?: return null
+        val purity = coin.purity ?: return null
+        val pricePerGram = metalPrices[metalType] ?: return null
+
+        val pureMetalMass = coin.weightInGrams.multiply(purity)
+            .divide(BigDecimal(1000), 6, RoundingMode.HALF_UP)
+        val totalPureMetal = pureMetalMass.multiply(BigDecimal(coin.quantity))
+        return totalPureMetal.multiply(pricePerGram)
     }
 
     private data class MetalValuationAggregation(
