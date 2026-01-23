@@ -10,12 +10,13 @@ import org.coffer.coffer2.repository.IssuePriceRepository
 import org.coffer.coffer2.repository.MetalQuoteRepository
 import org.coffer.coffer2.repository.PortfolioSnapshotEntity
 import org.coffer.coffer2.repository.PortfolioSnapshotRepository
+import org.coffer.coffer2.util.CollectorAggregation
+import org.coffer.coffer2.util.CollectorValuationCalculator
 import org.coffer.coffer2.util.MetalAggregation
 import org.coffer.coffer2.util.MetalValuationCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -66,7 +67,7 @@ class PortfolioSnapshotServiceImpl(
             goldGrams = metalValuation.goldGrams,
             silverGrams = metalValuation.silverGrams,
             platinumGrams = metalValuation.platinumGrams,
-            collectorValueExact = collectorValuation.exactValue,
+            collectorValueExact = BigDecimal.ZERO,
             collectorValueMin = collectorValuation.minValue,
             collectorValueMax = collectorValuation.maxValue,
             createdAt = ZonedDateTime.now()
@@ -126,11 +127,7 @@ class PortfolioSnapshotServiceImpl(
         return MetalValuationCalculator.aggregateMetalValues(coins, metalPrices)
     }
 
-    private fun computeCollectorValuation(coins: List<Coin>): CollectorValuationAggregation {
-        var minValue = BigDecimal.ZERO
-        var maxValue = BigDecimal.ZERO
-
-        // Get latest metal prices for fallback
+    private fun computeCollectorValuation(coins: List<Coin>): CollectorAggregation {
         val metalPrices = mutableMapOf<MetalType, BigDecimal>()
         MetalType.entries.forEach { metalType ->
             metalQuoteRepository.findLatestByMetalType(metalType)?.let {
@@ -138,57 +135,31 @@ class PortfolioSnapshotServiceImpl(
             }
         }
 
-        for (coin in coins) {
+        val coinIssueInfos = coins.mapNotNull { coin ->
             val issueIds = coinIssueRepository.findIssueIdsByCoinId(coin.id)
-            val quantity = BigDecimal(coin.quantity)
+            if (issueIds.isEmpty()) return@mapNotNull null
+            CoinIssueInfo(
+                coin = coin,
+                issueIds = issueIds,
+                grade = coin.grade ?: CoinGrade.VERY_FINE,
+                isExactMatch = issueIds.size == 1
+            )
+        }
 
-            if (issueIds.isEmpty()) {
-                // No collector data: use metal value as fallback
-                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
-                if (metalValue != null) {
-                    minValue = minValue.add(metalValue)
-                    maxValue = maxValue.add(metalValue)
+        val coinsWithIssues = coinIssueInfos.map { it.coin.id }.toSet()
+        val coinsWithoutCollector = coins.filter { it.id !in coinsWithIssues }
+
+        val priceMap = mutableMapOf<Pair<UUID, CoinGrade>, BigDecimal>()
+        for (info in coinIssueInfos) {
+            for (issueId in info.issueIds) {
+                issuePriceRepository.findLatestByIssueIdAndGrade(issueId, info.grade)?.let {
+                    priceMap[it.issueId to it.grade] = it.price
                 }
-                continue
-            }
-
-            val grade = coin.grade ?: CoinGrade.VERY_FINE
-
-            // Get latest prices for each issue
-            val prices = issueIds.mapNotNull { issueId ->
-                issuePriceRepository.findLatestByIssueIdAndGrade(issueId, grade)?.price
-            }
-
-            if (prices.isEmpty()) {
-                // No prices found for issues: use metal value as fallback
-                val metalValue = MetalValuationCalculator.coinMetalValue(coin, metalPrices)
-                if (metalValue != null) {
-                    minValue = minValue.add(metalValue)
-                    maxValue = maxValue.add(metalValue)
-                }
-                continue
-            }
-
-            if (issueIds.size == 1) {
-                val price = prices.first().multiply(quantity)
-                minValue = minValue.add(price)
-                maxValue = maxValue.add(price)
-            } else {
-                minValue = minValue.add(prices.min().multiply(quantity))
-                maxValue = maxValue.add(prices.max().multiply(quantity))
             }
         }
 
-        return CollectorValuationAggregation(
-            exactValue = BigDecimal.ZERO,
-            minValue = minValue.setScale(2, RoundingMode.HALF_UP),
-            maxValue = maxValue.setScale(2, RoundingMode.HALF_UP)
+        return CollectorValuationCalculator.aggregateCollectorValues(
+            coinIssueInfos, priceMap, coinsWithoutCollector, metalPrices
         )
     }
-
-    private data class CollectorValuationAggregation(
-        val exactValue: BigDecimal,
-        val minValue: BigDecimal,
-        val maxValue: BigDecimal
-    )
 }

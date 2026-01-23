@@ -9,7 +9,20 @@ data class PortfolioValuationResult(
     val currency: String,
     val metalValuation: PortfolioMetalValuationResult?,
     val collectorValuation: PortfolioCollectorValuationResult?
-)
+) {
+    companion object {
+        const val DEFAULT_CURRENCY = "EUR"
+
+        fun create(
+            timeframe: ValuationTimeframe,
+            metalValuation: PortfolioMetalValuationResult?,
+            collectorValuation: PortfolioCollectorValuationResult?,
+            currency: String? = null
+        ): PortfolioValuationResult = PortfolioValuationResult(timeframe, currency ?: DEFAULT_CURRENCY, metalValuation, collectorValuation)
+
+        fun empty(timeframe: ValuationTimeframe) = PortfolioValuationResult(timeframe, DEFAULT_CURRENCY, null, null)
+    }
+}
 
 data class PortfolioMetalValuationResult(
     val dataPoints: List<PortfolioMetalPoint>
