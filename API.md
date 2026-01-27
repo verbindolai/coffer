@@ -597,7 +597,6 @@ GET /api/v1/portfolio/valuation
     "dataPoints": [
       {
         "timestamp": "2023-06-15T00:00:00Z",
-        "exactValue": null,
         "minValue": 48500.00,
         "maxValue": 56200.00
       }
@@ -610,9 +609,7 @@ GET /api/v1/portfolio/valuation
 
 - **Short timeframes** (`1h`, `1d`): Computed real-time from current price data
 - **Longer timeframes** (`1w`, `1m`, `1y`, `max`): Uses pre-computed daily snapshots
-- **Collector valuation**:
-  - `exactValue` is provided only if all coins have exact issue matches
-  - Otherwise, `minValue` and `maxValue` represent the aggregate range
+- **Collector valuation**: `minValue` and `maxValue` represent the aggregate range
 
 ---
 

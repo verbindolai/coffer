@@ -72,7 +72,10 @@ data class CoinEntity(
     val thicknessInMillimeters: BigDecimal?,
 
     @Column(nullable = false)
-    val quantity: Int = 1
+    val quantity: Int = 1,
+
+    @Column
+    val deletedAt: ZonedDateTime? = null
 ) {
     fun toCoin(): Coin = Coin(
         id = id,
@@ -94,7 +97,8 @@ data class CoinEntity(
         createdAt = createdAt,
         diameterInMillimeters = diameterInMillimeters,
         thicknessInMillimeters = thicknessInMillimeters,
-        quantity = quantity
+        quantity = quantity,
+        deletedAt = deletedAt
     )
 
     companion object {
@@ -118,7 +122,8 @@ data class CoinEntity(
             createdAt = coin.createdAt,
             diameterInMillimeters = coin.diameterInMillimeters,
             thicknessInMillimeters = coin.thicknessInMillimeters,
-            quantity = coin.quantity
+            quantity = coin.quantity,
+            deletedAt = coin.deletedAt
         )
     }
 }

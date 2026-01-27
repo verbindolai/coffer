@@ -3,11 +3,12 @@ package org.coffer.coffer2.repository
 import org.coffer.coffer2.api.CoinSearchQuery
 import org.coffer.coffer2.application.CoinRepositoryAdapter
 import org.coffer.coffer2.domain.coin.Coin
+import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
+import java.time.ZonedDateTime
 import java.util.UUID
 
 @Component
@@ -19,7 +20,7 @@ class CoinRepositoryAdapterImpl(
     }
 
     override fun findById(id: UUID): Coin? {
-        return coinRepository.findByIdOrNull(id)?.toCoin()
+        return coinRepository.findByIdAndDeletedAtIsNull(id)?.toCoin()
     }
 
     override fun deleteById(id: UUID) {
@@ -27,7 +28,7 @@ class CoinRepositoryAdapterImpl(
     }
 
     override fun existsById(id: UUID): Boolean {
-        return coinRepository.existsById(id)
+        return coinRepository.existsByIdAndDeletedAtIsNull(id)
     }
 
     override fun search(query: CoinSearchQuery, pageable: Pageable): Page<Coin> {
@@ -36,16 +37,28 @@ class CoinRepositoryAdapterImpl(
     }
 
     override fun findByNumistaIdIsNotNull(): List<Coin> {
-        return coinRepository.findByNumistaIdIsNotNull().map { it.toCoin() }
+        return coinRepository.findByNumistaIdIsNotNullAndDeletedAtIsNull().map { it.toCoin() }
     }
 
     override fun findAll(): List<Coin> {
-        return coinRepository.findAll().map { it.toCoin() }
+        return coinRepository.findByDeletedAtIsNull().map { it.toCoin() }
+    }
+
+    override fun softDelete(id: UUID): Coin {
+        val entity = coinRepository.findByIdAndDeletedAtIsNull(id)
+            ?: throw CoinNotFoundException(id)
+        val updated = entity.copy(deletedAt = ZonedDateTime.now())
+        return coinRepository.save(updated).toCoin()
+    }
+
+    override fun findAllIncludingDeletedAfter(cutoff: ZonedDateTime): List<Coin> {
+        return coinRepository.findByDeletedAtIsNullOrDeletedAtAfter(cutoff).map { it.toCoin() }
     }
 
     private fun buildSpecification(query: CoinSearchQuery): Specification<CoinEntity> {
         val specs = mutableListOf<Specification<CoinEntity>>()
 
+        specs.add(deletedAtIsNull())
         query.country?.let { specs.add(countryEquals(it)) }
         query.denomination?.let { specs.add(denominationEquals(it)) }
         query.grade?.let { specs.add(gradeEquals(it)) }
@@ -61,6 +74,9 @@ class CoinRepositoryAdapterImpl(
         return specs.reduceOrNull { acc, spec -> acc.and(spec) }
             ?: Specification { _, _, cb -> cb.conjunction() }
     }
+
+    private fun deletedAtIsNull(): Specification<CoinEntity> =
+        Specification { root, _, cb -> cb.isNull(root.get<ZonedDateTime>("deletedAt")) }
 
     private fun countryEquals(country: String): Specification<CoinEntity> =
         Specification { root, _, cb -> cb.equal(root.get<String>("issuerCountryCode"), country.uppercase()) }

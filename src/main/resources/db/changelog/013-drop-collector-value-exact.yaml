@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-drop-collector-value-exact
+      author: coffer2
+      changes:
+        - dropColumn:
+            tableName: portfolio_snapshots
+            columnName: collector_value_exact

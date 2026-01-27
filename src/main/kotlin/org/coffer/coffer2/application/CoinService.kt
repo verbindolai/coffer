@@ -64,8 +64,8 @@ class CoinService(
         if (!coinRepository.existsById(id)) {
             throw CoinNotFoundException(id)
         }
-        coinRepository.deleteById(id)
-        logger.info { "Coin deleted with id $id" }
+        coinRepository.softDelete(id)
+        logger.info { "Coin soft-deleted with id $id" }
         applicationEventPublisher.publishEvent(CoinDeletedEvent(id))
     }
 

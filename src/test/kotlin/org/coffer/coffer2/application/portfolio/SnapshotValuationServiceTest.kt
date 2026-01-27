@@ -24,13 +24,11 @@ import kotlin.test.assertNull
 class SnapshotValuationServiceTest {
 
     private val portfolioSnapshotRepository = mockk<PortfolioSnapshotRepository>()
-    private val realTimeMetalValuationService = mockk<RealTimeMetalValuationService>()
-    private val realTimeCollectorValuationService = mockk<RealTimeCollectorValuationService>()
+    private val liveValuationService = mockk<LiveValuationService>()
 
     private val service = SnapshotValuationService(
         portfolioSnapshotRepository,
-        realTimeMetalValuationService,
-        realTimeCollectorValuationService
+        liveValuationService
     )
 
     private fun createCoin(
@@ -61,17 +59,16 @@ class SnapshotValuationServiceTest {
     )
 
     private fun createSnapshotEntity(
-        snapshotDate: LocalDate = LocalDate.now().minusDays(1),
+        createdAt: ZonedDateTime = ZonedDateTime.now().minusDays(1),
         metalValue: BigDecimal? = BigDecimal("2000.00"),
         goldGrams: BigDecimal? = BigDecimal("31.0"),
         silverGrams: BigDecimal? = BigDecimal("0.0"),
         platinumGrams: BigDecimal? = BigDecimal("0.0"),
-        collectorValueExact: BigDecimal? = null,
         collectorValueMin: BigDecimal? = BigDecimal("2500.00"),
         collectorValueMax: BigDecimal? = BigDecimal("2700.00")
     ) = PortfolioSnapshotEntity(
         id = UUID.randomUUID(),
-        snapshotDate = snapshotDate,
+        snapshotDate = createdAt.toLocalDate(),
         currencyCode = "EUR",
         totalCoins = 1,
         totalQuantity = 1,
@@ -79,19 +76,18 @@ class SnapshotValuationServiceTest {
         goldGrams = goldGrams,
         silverGrams = silverGrams,
         platinumGrams = platinumGrams,
-        collectorValueExact = collectorValueExact,
         collectorValueMin = collectorValueMin,
         collectorValueMax = collectorValueMax,
-        createdAt = ZonedDateTime.now()
+        createdAt = createdAt
     )
 
     @Test
-    fun `computeSnapshotValuation returns nulls when no snapshots and no coins`() {
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns emptyList()
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+    fun `computeValuation returns nulls when no snapshots and no coins`() {
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns emptyList()
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (metalResult, collectorResult) = service.computeSnapshotValuation(
+        val (metalResult, collectorResult) = service.computeValuation(
             emptyList(), ValuationTimeframe.WEEK_1
         )
 
@@ -100,9 +96,9 @@ class SnapshotValuationServiceTest {
     }
 
     @Test
-    fun `computeSnapshotValuation transforms snapshot to metal data points`() {
+    fun `computeValuation transforms snapshot to metal data points`() {
         val snapshot = createSnapshotEntity(
-            snapshotDate = LocalDate.now().minusDays(3),
+            createdAt = ZonedDateTime.now().minusDays(3),
             metalValue = BigDecimal("2000.00"),
             goldGrams = BigDecimal("31.0"),
             silverGrams = BigDecimal("0.0"),
@@ -110,11 +106,11 @@ class SnapshotValuationServiceTest {
         )
         val coins = listOf(createCoin())
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (metalResult, _) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (metalResult, _) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNotNull(metalResult)
         assertEquals(1, metalResult.dataPoints.size)
@@ -122,19 +118,19 @@ class SnapshotValuationServiceTest {
     }
 
     @Test
-    fun `computeSnapshotValuation transforms snapshot to collector data points`() {
+    fun `computeValuation transforms snapshot to collector data points`() {
         val snapshot = createSnapshotEntity(
-            snapshotDate = LocalDate.now().minusDays(3),
+            createdAt = ZonedDateTime.now().minusDays(3),
             collectorValueMin = BigDecimal("2500.00"),
             collectorValueMax = BigDecimal("2700.00")
         )
         val coins = listOf(createCoin())
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (_, collectorResult) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (_, collectorResult) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNotNull(collectorResult)
         assertEquals(1, collectorResult.dataPoints.size)
@@ -143,8 +139,8 @@ class SnapshotValuationServiceTest {
     }
 
     @Test
-    fun `computeSnapshotValuation appends live metal point`() {
-        val snapshot = createSnapshotEntity(snapshotDate = LocalDate.now().minusDays(3))
+    fun `computeValuation appends live metal point`() {
+        val snapshot = createSnapshotEntity(createdAt = ZonedDateTime.now().minusDays(3))
         val coins = listOf(createCoin())
         val livePoint = PortfolioMetalPoint(
             timestamp = ZonedDateTime.now(),
@@ -154,11 +150,11 @@ class SnapshotValuationServiceTest {
             platinumGrams = BigDecimal("0.0")
         )
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns livePoint
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns livePoint
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (metalResult, _) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (metalResult, _) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNotNull(metalResult)
         assertEquals(2, metalResult.dataPoints.size)
@@ -166,21 +162,20 @@ class SnapshotValuationServiceTest {
     }
 
     @Test
-    fun `computeSnapshotValuation appends live collector point`() {
-        val snapshot = createSnapshotEntity(snapshotDate = LocalDate.now().minusDays(3))
+    fun `computeValuation appends live collector point`() {
+        val snapshot = createSnapshotEntity(createdAt = ZonedDateTime.now().minusDays(3))
         val coins = listOf(createCoin())
         val livePoint = PortfolioCollectorPoint(
             timestamp = ZonedDateTime.now(),
-            exactValue = null,
             minValue = BigDecimal("2600.00"),
             maxValue = BigDecimal("2800.00")
         )
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns livePoint
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns livePoint
 
-        val (_, collectorResult) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (_, collectorResult) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNotNull(collectorResult)
         assertEquals(2, collectorResult.dataPoints.size)
@@ -188,52 +183,51 @@ class SnapshotValuationServiceTest {
     }
 
     @Test
-    fun `computeSnapshotValuation uses findAllOrderBySnapshotDateAsc for MAX timeframe`() {
-        val snapshot = createSnapshotEntity(snapshotDate = LocalDate.now().minusYears(2))
+    fun `computeValuation uses findAllOrderByCreatedAtAsc for MAX timeframe`() {
+        val snapshot = createSnapshotEntity(createdAt = ZonedDateTime.now().minusYears(2))
         val coins = listOf(createCoin())
 
-        every { portfolioSnapshotRepository.findAllOrderBySnapshotDateAsc() } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findAllOrderByCreatedAtAsc() } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (metalResult, _) = service.computeSnapshotValuation(coins, ValuationTimeframe.MAX)
+        val (metalResult, _) = service.computeValuation(coins, ValuationTimeframe.MAX)
 
         assertNotNull(metalResult)
         assertEquals(1, metalResult.dataPoints.size)
     }
 
     @Test
-    fun `computeSnapshotValuation skips null metal value snapshots`() {
+    fun `computeValuation skips null metal value snapshots`() {
         val snapshot = createSnapshotEntity(
-            snapshotDate = LocalDate.now().minusDays(3),
+            createdAt = ZonedDateTime.now().minusDays(3),
             metalValue = null
         )
         val coins = listOf(createCoin())
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (metalResult, _) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (metalResult, _) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNull(metalResult)
     }
 
     @Test
-    fun `computeSnapshotValuation skips snapshots without collector values`() {
+    fun `computeValuation skips snapshots without collector values`() {
         val snapshot = createSnapshotEntity(
-            snapshotDate = LocalDate.now().minusDays(3),
-            collectorValueExact = null,
+            createdAt = ZonedDateTime.now().minusDays(3),
             collectorValueMin = null,
             collectorValueMax = null
         )
         val coins = listOf(createCoin())
 
-        every { portfolioSnapshotRepository.findBySnapshotDateAfter(any()) } returns listOf(snapshot)
-        every { realTimeMetalValuationService.computeLivePoint(any(), any()) } returns null
-        every { realTimeCollectorValuationService.computeLivePoint(any(), any()) } returns null
+        every { portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(any()) } returns listOf(snapshot)
+        every { liveValuationService.computeLiveMetalPoint(any(), any()) } returns null
+        every { liveValuationService.computeLiveCollectorPoint(any(), any()) } returns null
 
-        val (_, collectorResult) = service.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1)
+        val (_, collectorResult) = service.computeValuation(coins, ValuationTimeframe.WEEK_1)
 
         assertNull(collectorResult)
     }

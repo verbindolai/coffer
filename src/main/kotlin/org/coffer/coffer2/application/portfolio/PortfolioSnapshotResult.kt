@@ -13,7 +13,6 @@ data class PortfolioSnapshotResult(
     val goldGrams: BigDecimal?,
     val silverGrams: BigDecimal?,
     val platinumGrams: BigDecimal?,
-    val collectorValueExact: BigDecimal?,
     val collectorValueMin: BigDecimal?,
     val collectorValueMax: BigDecimal?
 ) {
@@ -28,7 +27,6 @@ data class PortfolioSnapshotResult(
                 goldGrams = entity.goldGrams,
                 silverGrams = entity.silverGrams,
                 platinumGrams = entity.platinumGrams,
-                collectorValueExact = entity.collectorValueExact,
                 collectorValueMin = entity.collectorValueMin,
                 collectorValueMax = entity.collectorValueMax
             )

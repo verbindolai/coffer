@@ -32,3 +32,9 @@ databaseChangeLog:
   - include:
       file: 011-allow-multiple-daily-snapshots.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 012-add-coin-soft-delete.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 013-drop-collector-value-exact.yaml
+      relativeToChangelogFile: true

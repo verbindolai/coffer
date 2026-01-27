@@ -28,6 +28,7 @@ data class Coin(
     val diameterInMillimeters: BigDecimal?,
     val thicknessInMillimeters: BigDecimal?,
     val quantity: Int = 1,
+    val deletedAt: ZonedDateTime? = null,
 )
 
 data class YearOfMinting(

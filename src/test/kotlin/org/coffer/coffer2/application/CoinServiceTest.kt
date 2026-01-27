@@ -301,18 +301,18 @@ class CoinServiceTest {
     // ==================== DELETE COIN TESTS ====================
 
     @Test
-    fun `deleteCoin should delete existing coin`() {
+    fun `deleteCoin should soft-delete existing coin`() {
         // Given
         val coinId = UUID.randomUUID()
         every { coinRepository.existsById(coinId) } returns true
-        every { coinRepository.deleteById(coinId) } returns Unit
+        every { coinRepository.softDelete(coinId) } returns createTestCoin(coinId)
 
         // When
         service.deleteCoin(coinId)
 
         // Then
         verify(exactly = 1) { coinRepository.existsById(coinId) }
-        verify(exactly = 1) { coinRepository.deleteById(coinId) }
+        verify(exactly = 1) { coinRepository.softDelete(coinId) }
     }
 
     @Test
@@ -327,7 +327,7 @@ class CoinServiceTest {
         }
 
         verify(exactly = 1) { coinRepository.existsById(coinId) }
-        verify(exactly = 0) { coinRepository.deleteById(any()) }
+        verify(exactly = 0) { coinRepository.softDelete(any()) }
     }
 
     // ==================== SEARCH COINS TESTS ====================

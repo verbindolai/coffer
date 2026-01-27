@@ -90,9 +90,6 @@ data class PortfolioCollectorPointResponse(
     @Schema(description = "Timestamp of the valuation", example = "2023-06-15T10:30:00Z")
     val timestamp: Instant,
 
-    @Schema(description = "Exact total value if all coins have exact matches (null if any use ranges)", example = "52340.00")
-    val exactValue: BigDecimal?,
-
     @Schema(description = "Minimum total value across all coins", example = "48500.00")
     val minValue: BigDecimal?,
 
@@ -102,7 +99,6 @@ data class PortfolioCollectorPointResponse(
     companion object {
         fun from(point: PortfolioCollectorPoint) = PortfolioCollectorPointResponse(
             timestamp = point.timestamp.toInstant(),
-            exactValue = point.exactValue,
             minValue = point.minValue,
             maxValue = point.maxValue
         )

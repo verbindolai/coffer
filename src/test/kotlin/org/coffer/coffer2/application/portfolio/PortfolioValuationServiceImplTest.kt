@@ -23,14 +23,10 @@ import kotlin.test.assertNull
 class PortfolioValuationServiceImplTest {
 
     private val coinRepositoryAdapter = mockk<CoinRepositoryAdapter>()
-    private val realTimeMetalValuationService = mockk<RealTimeMetalValuationService>()
-    private val realTimeCollectorValuationService = mockk<RealTimeCollectorValuationService>()
     private val snapshotValuationService = mockk<SnapshotValuationService>()
 
     private val service = PortfolioValuationServiceImpl(
         coinRepositoryAdapter,
-        realTimeMetalValuationService,
-        realTimeCollectorValuationService,
         snapshotValuationService
     )
 
@@ -61,104 +57,88 @@ class PortfolioValuationServiceImplTest {
     fun `getValuation returns empty result when no coins`() {
         every { coinRepositoryAdapter.findAll() } returns emptyList()
 
-        val result = service.getValuation(ValuationTimeframe.HOUR_1)
+        val result = service.getValuation(ValuationTimeframe.DAY_1)
 
-        assertEquals(ValuationTimeframe.HOUR_1, result.timeframe)
+        assertEquals(ValuationTimeframe.DAY_1, result.timeframe)
         assertEquals("EUR", result.currency)
         assertNull(result.metalValuation)
         assertNull(result.collectorValuation)
     }
 
     @Test
-    fun `getValuation routes HOUR_1 to real-time services`() {
+    fun `getValuation uses snapshot service for DAY_1`() {
         val coins = listOf(createCoin())
         val metalResult = PortfolioMetalValuationResult(listOf(
             PortfolioMetalPoint(ZonedDateTime.now(), BigDecimal("2000"), BigDecimal("31"), BigDecimal.ZERO, BigDecimal.ZERO)
         ))
         val collectorResult = PortfolioCollectorValuationResult(listOf(
-            PortfolioCollectorPoint(ZonedDateTime.now(), null, BigDecimal("2500"), BigDecimal("2700"))
+            PortfolioCollectorPoint(ZonedDateTime.now(), BigDecimal("2500"), BigDecimal("2700"))
         ))
 
         every { coinRepositoryAdapter.findAll() } returns coins
-        every { realTimeMetalValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.HOUR_1) } returns metalResult
-        every { realTimeCollectorValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.HOUR_1) } returns collectorResult
-
-        val result = service.getValuation(ValuationTimeframe.HOUR_1)
-
-        assertEquals(ValuationTimeframe.HOUR_1, result.timeframe)
-        assertEquals("EUR", result.currency)
-        assertNotNull(result.metalValuation)
-        assertNotNull(result.collectorValuation)
-        verify { realTimeMetalValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.HOUR_1) }
-        verify { realTimeCollectorValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.HOUR_1) }
-    }
-
-    @Test
-    fun `getValuation routes DAY_1 to real-time services`() {
-        val coins = listOf(createCoin())
-
-        every { coinRepositoryAdapter.findAll() } returns coins
-        every { realTimeMetalValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.DAY_1) } returns null
-        every { realTimeCollectorValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.DAY_1) } returns null
+        every { snapshotValuationService.computeValuation(coins, ValuationTimeframe.DAY_1) } returns (metalResult to collectorResult)
 
         val result = service.getValuation(ValuationTimeframe.DAY_1)
 
         assertEquals(ValuationTimeframe.DAY_1, result.timeframe)
-        verify { realTimeMetalValuationService.computeTimeSeries(coins, any(), ValuationTimeframe.DAY_1) }
+        assertEquals("EUR", result.currency)
+        assertNotNull(result.metalValuation)
+        assertNotNull(result.collectorValuation)
+        verify { snapshotValuationService.computeValuation(coins, ValuationTimeframe.DAY_1) }
     }
 
     @Test
-    fun `getValuation routes WEEK_1 to snapshot service`() {
+    fun `getValuation uses snapshot service for WEEK_1`() {
         val coins = listOf(createCoin())
         val metalResult = PortfolioMetalValuationResult(listOf(
             PortfolioMetalPoint(ZonedDateTime.now(), BigDecimal("2000"), BigDecimal("31"), BigDecimal.ZERO, BigDecimal.ZERO)
         ))
 
         every { coinRepositoryAdapter.findAll() } returns coins
-        every { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1) } returns (metalResult to null)
+        every { snapshotValuationService.computeValuation(coins, ValuationTimeframe.WEEK_1) } returns (metalResult to null)
 
         val result = service.getValuation(ValuationTimeframe.WEEK_1)
 
         assertEquals(ValuationTimeframe.WEEK_1, result.timeframe)
         assertNotNull(result.metalValuation)
         assertNull(result.collectorValuation)
-        verify { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.WEEK_1) }
+        verify { snapshotValuationService.computeValuation(coins, ValuationTimeframe.WEEK_1) }
     }
 
     @Test
-    fun `getValuation routes MONTH_1 to snapshot service`() {
+    fun `getValuation uses snapshot service for MONTH_1`() {
         val coins = listOf(createCoin())
 
         every { coinRepositoryAdapter.findAll() } returns coins
-        every { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.MONTH_1) } returns (null to null)
+        every { snapshotValuationService.computeValuation(coins, ValuationTimeframe.MONTH_1) } returns (null to null)
 
         val result = service.getValuation(ValuationTimeframe.MONTH_1)
 
         assertEquals(ValuationTimeframe.MONTH_1, result.timeframe)
-        verify { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.MONTH_1) }
+        verify { snapshotValuationService.computeValuation(coins, ValuationTimeframe.MONTH_1) }
     }
 
     @Test
-    fun `getValuation routes YEAR_1 to snapshot service`() {
+    fun `getValuation uses snapshot service for YEAR_1`() {
         val coins = listOf(createCoin())
 
         every { coinRepositoryAdapter.findAll() } returns coins
-        every { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.YEAR_1) } returns (null to null)
+        every { snapshotValuationService.computeValuation(coins, ValuationTimeframe.YEAR_1) } returns (null to null)
 
         val result = service.getValuation(ValuationTimeframe.YEAR_1)
 
-        verify { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.YEAR_1) }
+        verify { snapshotValuationService.computeValuation(coins, ValuationTimeframe.YEAR_1) }
     }
 
     @Test
-    fun `getValuation routes MAX to snapshot service`() {
+    fun `getValuation uses snapshot service for MAX`() {
         val coins = listOf(createCoin())
 
         every { coinRepositoryAdapter.findAll() } returns coins
-        every { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.MAX) } returns (null to null)
+        every { snapshotValuationService.computeValuation(coins, ValuationTimeframe.MAX) } returns (null to null)
 
         val result = service.getValuation(ValuationTimeframe.MAX)
 
-        verify { snapshotValuationService.computeSnapshotValuation(coins, ValuationTimeframe.MAX) }
+        verify { snapshotValuationService.computeValuation(coins, ValuationTimeframe.MAX) }
     }
 }

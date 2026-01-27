@@ -1,22 +1,22 @@
 package org.coffer.coffer2.application.portfolio
 
 import org.coffer.coffer2.domain.ValuationTimeframe
-import org.coffer.coffer2.domain.bucketByInterval
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.repository.PortfolioSnapshotRepository
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/**
+ * Computes portfolio valuations from snapshots + live current point.
+ */
 @Component
 class SnapshotValuationService(
     private val portfolioSnapshotRepository: PortfolioSnapshotRepository,
-    private val realTimeMetalValuationService: RealTimeMetalValuationService,
-    private val realTimeCollectorValuationService: RealTimeCollectorValuationService
+    private val liveValuationService: LiveValuationService
 ) {
 
-    fun computeSnapshotValuation(
+    fun computeValuation(
         coins: List<Coin>,
         timeframe: ValuationTimeframe
     ): Pair<PortfolioMetalValuationResult?, PortfolioCollectorValuationResult?> {
@@ -24,50 +24,43 @@ class SnapshotValuationService(
         val startTime = timeframe.getStartTime(now)
 
         val snapshots = if (startTime != null) {
-            portfolioSnapshotRepository.findBySnapshotDateAfter(startTime.toLocalDate())
+            portfolioSnapshotRepository.findByCreatedAtAfterOrderByCreatedAtAsc(startTime)
         } else {
-            portfolioSnapshotRepository.findAllOrderBySnapshotDateAsc()
+            portfolioSnapshotRepository.findAllOrderByCreatedAtAsc()
         }
 
         if (snapshots.isEmpty() && coins.isEmpty()) {
             return null to null
         }
 
-        val zone = ZoneId.systemDefault()
-        val bucketedSnapshots = bucketByInterval(snapshots, timeframe) { it.snapshotDate.atStartOfDay(zone) }
-
-        val metalDataPoints = bucketedSnapshots.mapNotNull { (bucketTime, snapshotsInBucket) ->
-            val lastSnapshot = snapshotsInBucket.last()
-            if (lastSnapshot.metalValue == null) return@mapNotNull null
+        // Convert snapshots to data points
+        val metalDataPoints = snapshots.mapNotNull { snapshot ->
+            if (snapshot.metalValue == null) return@mapNotNull null
 
             PortfolioMetalPoint(
-                timestamp = bucketTime,
-                totalValue = lastSnapshot.metalValue,
-                goldGrams = lastSnapshot.goldGrams ?: BigDecimal.ZERO,
-                silverGrams = lastSnapshot.silverGrams ?: BigDecimal.ZERO,
-                platinumGrams = lastSnapshot.platinumGrams ?: BigDecimal.ZERO
+                timestamp = snapshot.createdAt,
+                totalValue = snapshot.metalValue,
+                goldGrams = snapshot.goldGrams ?: BigDecimal.ZERO,
+                silverGrams = snapshot.silverGrams ?: BigDecimal.ZERO,
+                platinumGrams = snapshot.platinumGrams ?: BigDecimal.ZERO
             )
         }
 
-        val collectorDataPoints = bucketedSnapshots.mapNotNull { (bucketTime, snapshotsInBucket) ->
-            val lastSnapshot = snapshotsInBucket.last()
-            val hasCollectorValues = lastSnapshot.collectorValueExact != null ||
-                lastSnapshot.collectorValueMin != null ||
-                lastSnapshot.collectorValueMax != null
+        val collectorDataPoints = snapshots.mapNotNull { snapshot ->
+            val hasCollectorValues = snapshot.collectorValueMin != null || snapshot.collectorValueMax != null
 
             if (!hasCollectorValues) return@mapNotNull null
 
             PortfolioCollectorPoint(
-                timestamp = bucketTime,
-                exactValue = lastSnapshot.collectorValueExact,
-                minValue = lastSnapshot.collectorValueMin,
-                maxValue = lastSnapshot.collectorValueMax
+                timestamp = snapshot.createdAt,
+                minValue = snapshot.collectorValueMin,
+                maxValue = snapshot.collectorValueMax
             )
         }
 
         // Append live data points computed from current state
-        val liveMetalPoint = realTimeMetalValuationService.computeLivePoint(coins, now)
-        val liveCollectorPoint = realTimeCollectorValuationService.computeLivePoint(coins, now)
+        val liveMetalPoint = liveValuationService.computeLiveMetalPoint(coins, now)
+        val liveCollectorPoint = liveValuationService.computeLiveCollectorPoint(coins, now)
 
         val finalMetalPoints = if (liveMetalPoint != null) {
             metalDataPoints + liveMetalPoint

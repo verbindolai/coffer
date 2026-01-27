@@ -42,7 +42,6 @@ data class PortfolioCollectorValuationResult(
 
 data class PortfolioCollectorPoint(
     val timestamp: ZonedDateTime,
-    val exactValue: BigDecimal?,
     val minValue: BigDecimal?,
     val maxValue: BigDecimal?
 )

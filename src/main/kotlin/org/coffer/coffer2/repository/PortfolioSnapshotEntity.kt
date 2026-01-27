@@ -40,9 +40,6 @@ data class PortfolioSnapshotEntity(
     val platinumGrams: BigDecimal?,
 
     @Column(precision = 19, scale = 4)
-    val collectorValueExact: BigDecimal?,
-
-    @Column(precision = 19, scale = 4)
     val collectorValueMin: BigDecimal?,
 
     @Column(precision = 19, scale = 4)

@@ -222,12 +222,12 @@ class CoinValuationServiceImplTest {
         val coin = createTestCoin(id = coinId)
 
         // Create quotes at different times within and across buckets
-        // For DAY_1, bucket interval is 5 minutes
+        // For DAY_1, bucket interval is 1 hour
         val quotes = listOf(
-            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.withMinute(0)),
-            createMetalQuote(MetalType.GOLD, BigDecimal("64.50"), baseTime.withMinute(2)),  // Same bucket as above
-            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.withMinute(5)),  // New bucket
-            createMetalQuote(MetalType.GOLD, BigDecimal("65.50"), baseTime.withMinute(10)), // New bucket
+            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.withHour(10).withMinute(15)),
+            createMetalQuote(MetalType.GOLD, BigDecimal("64.50"), baseTime.withHour(10).withMinute(45)),  // Same bucket as above
+            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.withHour(11).withMinute(30)),  // New bucket
+            createMetalQuote(MetalType.GOLD, BigDecimal("65.50"), baseTime.withHour(12).withMinute(0)),   // New bucket
         )
 
         every { coinRepositoryAdapter.findById(coinId) } returns coin
@@ -237,7 +237,7 @@ class CoinValuationServiceImplTest {
         val result = service.getValuation(coinId, ValuationTimeframe.DAY_1)
 
         assertNotNull(result.metalValuation)
-        // Should have 3 buckets: 12:00, 12:05, 12:10
+        // Should have 3 buckets: 10:00, 11:00, 12:00
         assertEquals(3, result.metalValuation!!.dataPoints.size)
 
         // First bucket should use last value (64.50, not 64.00)
@@ -367,11 +367,11 @@ class CoinValuationServiceImplTest {
         val coin = createTestCoin(id = coinId, metalType = null, purity = null)
         val issueId = UUID.randomUUID()
 
-        // Create prices at different 5-minute intervals
+        // Create prices at different hourly intervals (DAY_1 uses 1-hour buckets)
         val prices = listOf(
-            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2450.00"), baseTime.withMinute(0)),
-            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2500.00"), baseTime.withMinute(3)),  // Same bucket
-            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2550.00"), baseTime.withMinute(5)),  // New bucket
+            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2450.00"), baseTime.withHour(10).withMinute(15)),
+            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2500.00"), baseTime.withHour(10).withMinute(45)),  // Same bucket
+            createIssuePrice(issueId, CoinGrade.UNCIRCULATED, BigDecimal("2550.00"), baseTime.withHour(11).withMinute(30)),  // New bucket
         )
 
         every { coinRepositoryAdapter.findById(coinId) } returns coin
@@ -381,7 +381,7 @@ class CoinValuationServiceImplTest {
         val result = service.getValuation(coinId, ValuationTimeframe.DAY_1)
 
         assertNotNull(result.issueValuation)
-        // Should have 2 buckets
+        // Should have 2 buckets: 10:00 and 11:00
         assertEquals(2, result.issueValuation!!.dataPoints.size)
         // First bucket should use last value (2500, not 2450)
         assertEquals(BigDecimal("2500.00"), result.issueValuation!!.dataPoints[0].price)
@@ -470,12 +470,13 @@ class CoinValuationServiceImplTest {
         val coinId = UUID.randomUUID()
         val coin = createTestCoin(id = coinId)
 
-        // Quotes within the same hour should be bucketed together
+        // Quotes within the same 4-hour bucket should be bucketed together
+        // WEEK_1 uses 4-hour buckets (0-4, 4-8, 8-12, 12-16, 16-20, 20-24)
         val quotes = listOf(
-            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.withMinute(15)),
-            createMetalQuote(MetalType.GOLD, BigDecimal("64.50"), baseTime.withMinute(30)),
-            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.withMinute(45)),
-            createMetalQuote(MetalType.GOLD, BigDecimal("65.50"), baseTime.plusHours(1).withMinute(15))
+            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.withHour(13)),  // Bucket 12-16
+            createMetalQuote(MetalType.GOLD, BigDecimal("64.50"), baseTime.withHour(14)),  // Same bucket
+            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.withHour(15)),  // Same bucket
+            createMetalQuote(MetalType.GOLD, BigDecimal("65.50"), baseTime.withHour(16))   // Bucket 16-20
         )
 
         every { coinRepositoryAdapter.findById(coinId) } returns coin
@@ -485,7 +486,7 @@ class CoinValuationServiceImplTest {
         val result = service.getValuation(coinId, ValuationTimeframe.WEEK_1)
 
         assertNotNull(result.metalValuation)
-        // Should have 2 hourly buckets
+        // Should have 2 four-hour buckets: 12:00 and 16:00
         assertEquals(2, result.metalValuation!!.dataPoints.size)
         // First bucket should use last value (65.00)
         assertEquals(BigDecimal("65.00"), result.metalValuation!!.dataPoints[0].pricePerGram)
@@ -496,11 +497,11 @@ class CoinValuationServiceImplTest {
         val coinId = UUID.randomUUID()
         val coin = createTestCoin(id = coinId)
 
-        // Quotes spanning different 4-hour buckets
+        // Quotes spanning different days (MONTH_1 uses daily buckets)
         val quotes = listOf(
-            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.withHour(1)),   // Bucket 0-4
-            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.withHour(5)),   // Bucket 4-8
-            createMetalQuote(MetalType.GOLD, BigDecimal("66.00"), baseTime.withHour(10)),  // Bucket 8-12
+            createMetalQuote(MetalType.GOLD, BigDecimal("64.00"), baseTime.minusDays(2).withHour(10)),
+            createMetalQuote(MetalType.GOLD, BigDecimal("65.00"), baseTime.minusDays(1).withHour(14)),
+            createMetalQuote(MetalType.GOLD, BigDecimal("66.00"), baseTime.withHour(9)),
         )
 
         every { coinRepositoryAdapter.findById(coinId) } returns coin
@@ -510,6 +511,7 @@ class CoinValuationServiceImplTest {
         val result = service.getValuation(coinId, ValuationTimeframe.MONTH_1)
 
         assertNotNull(result.metalValuation)
+        // Should have 3 daily buckets
         assertEquals(3, result.metalValuation!!.dataPoints.size)
     }
 

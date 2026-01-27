@@ -8,14 +8,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class PortfolioValuationServiceImpl(
     private val coinRepositoryAdapter: CoinRepositoryAdapter,
-    private val realTimeMetalValuationService: RealTimeMetalValuationService,
-    private val realTimeCollectorValuationService: RealTimeCollectorValuationService,
     private val snapshotValuationService: SnapshotValuationService
 ) : PortfolioValuationService {
-
-    companion object {
-        private val REAL_TIME_TIMEFRAMES = setOf(ValuationTimeframe.HOUR_1, ValuationTimeframe.DAY_1)
-    }
 
     @Transactional(readOnly = true)
     override fun getValuation(timeframe: ValuationTimeframe): PortfolioValuationResult {
@@ -24,23 +18,12 @@ class PortfolioValuationServiceImpl(
             return PortfolioValuationResult.empty(timeframe)
         }
 
-        return if (timeframe in REAL_TIME_TIMEFRAMES) {
-            val now = java.time.ZonedDateTime.now()
-            val startTime = timeframe.getStartTime(now)!!
+        val (metalValuation, collectorValuation) = snapshotValuationService.computeValuation(coins, timeframe)
 
-            PortfolioValuationResult.create(
-                timeframe = timeframe,
-                metalValuation = realTimeMetalValuationService.computeTimeSeries(coins, startTime, timeframe),
-                collectorValuation = realTimeCollectorValuationService.computeTimeSeries(coins, startTime, timeframe)
-            )
-        } else {
-            val (metalValuation, collectorValuation) = snapshotValuationService.computeSnapshotValuation(coins, timeframe)
-
-            PortfolioValuationResult.create(
-                timeframe = timeframe,
-                metalValuation = metalValuation,
-                collectorValuation = collectorValuation
-            )
-        }
+        return PortfolioValuationResult.create(
+            timeframe = timeframe,
+            metalValuation = metalValuation,
+            collectorValuation = collectorValuation
+        )
     }
 }

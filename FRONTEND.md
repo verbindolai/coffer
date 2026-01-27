@@ -311,7 +311,6 @@ interface PortfolioCollectorValuation {
 
 interface PortfolioCollectorPoint {
   timestamp: string;
-  exactValue: number | null;       // Only if ALL coins have exact matches
   minValue: number | null;
   maxValue: number | null;
 }

@@ -9,17 +9,14 @@ enum class ValuationTimeframe(
     val lookbackDuration: Duration?,
     val bucketInterval: Duration
 ) {
-    // 1 hour lookback, 5-minute buckets (matches data collection frequency)
-    HOUR_1("1h", Duration.ofHours(1), Duration.ofMinutes(5)),
+    // 1 day lookback, hourly buckets
+    DAY_1("1d", Duration.ofDays(1), Duration.ofHours(1)),
 
-    // 1 day lookback, 5-minute buckets
-    DAY_1("1d", Duration.ofDays(1), Duration.ofMinutes(5)),
+    // 1 week lookback, 4-hour buckets
+    WEEK_1("1w", Duration.ofDays(7), Duration.ofHours(4)),
 
-    // 1 week lookback, 1-hour buckets (aggregate to reduce points)
-    WEEK_1("1w", Duration.ofDays(7), Duration.ofHours(1)),
-
-    // 1 month lookback, 4-hour buckets
-    MONTH_1("1m", Duration.ofDays(30), Duration.ofHours(4)),
+    // 1 month lookback, daily buckets
+    MONTH_1("1m", Duration.ofDays(30), Duration.ofDays(1)),
 
     // 1 year lookback, daily buckets
     YEAR_1("1y", Duration.ofDays(365), Duration.ofDays(1)),

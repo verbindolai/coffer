@@ -67,7 +67,6 @@ class PortfolioSnapshotServiceImpl(
             goldGrams = metalValuation.goldGrams,
             silverGrams = metalValuation.silverGrams,
             platinumGrams = metalValuation.platinumGrams,
-            collectorValueExact = BigDecimal.ZERO,
             collectorValueMin = collectorValuation.minValue,
             collectorValueMax = collectorValuation.maxValue,
             createdAt = ZonedDateTime.now()
@@ -107,7 +106,6 @@ class PortfolioSnapshotServiceImpl(
             goldGrams = BigDecimal.ZERO,
             silverGrams = BigDecimal.ZERO,
             platinumGrams = BigDecimal.ZERO,
-            collectorValueExact = BigDecimal.ZERO,
             collectorValueMin = BigDecimal.ZERO,
             collectorValueMax = BigDecimal.ZERO,
             createdAt = ZonedDateTime.now()

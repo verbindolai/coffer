@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-add-coin-soft-delete
+      author: coffer
+      changes:
+        - addColumn:
+            tableName: coins
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+        - createIndex:
+            indexName: idx_coins_deleted_at
+            tableName: coins
+            columns:
+              - column:
+                  name: deleted_at
