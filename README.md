@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/YOUR_USERNAME/coffer2-ui/main/public/favicon.svg" width="80" alt="Coffer Logo">
+  <img src="https://raw.githubusercontent.com/verbindolai/coffer-ui/refs/heads/master/public/favicon.svg" width="80" alt="Coffer Logo">
 </p>
 
 <h1 align="center">Coffer Backend</h1>
