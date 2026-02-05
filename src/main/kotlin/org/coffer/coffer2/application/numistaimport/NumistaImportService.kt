@@ -58,24 +58,38 @@ class NumistaImportService(
         var failed = 0
         val errors = mutableListOf<String>()
 
+        // Cache type details to avoid redundant API calls for items sharing the same type
+        val typeDetailsCache = mutableMapOf<String, NumistaTypeResponse>()
+
+        // Build a set of already-imported (numistaId, year, mintMark) tuples for dedup on re-import
+        val existingCoins = coinRepository.findByNumistaIdIsNotNull()
+        val existingKeys = existingCoins.map { coin ->
+            Triple(coin.numistaId, coin.yearOfMinting.year, coin.mintMark?.value)
+        }.toSet()
+
         for (item in collectedItems.items) {
             val numistaId = item.type.id.toString()
+            val year = item.issue?.gregorian_year ?: item.issue?.year ?: 0
+            val mintMark = item.issue?.mint_letter
+            val itemKey = Triple(numistaId, year, mintMark)
 
-            if (coinRepository.existsByNumistaId(numistaId)) {
-                logger.info { "Skipping already imported coin: $item (numistaId=$numistaId)" }
+            if (itemKey in existingKeys) {
+                logger.info { "Skipping already imported coin: ${item.type.title} (numistaId=$numistaId, year=$year, mint=$mintMark)" }
                 skipped++
                 continue
             }
 
             try {
-                val typeDetails = numistaClient.getCoinType(numistaId)
+                val typeDetails = typeDetailsCache.getOrPut(numistaId) {
+                    numistaClient.getCoinType(numistaId).also {
+                        // Rate limiting only when we actually call the API
+                        Thread.sleep(100)
+                    }
+                }
                 val command = mapToCreateCoinCommand(item, typeDetails)
                 coinService.createCoin(command)
                 imported++
-                logger.debug { "Imported coin: ${item.type.title} (numistaId=$numistaId)" }
-
-                // Rate limiting to avoid 429s from Numista API
-                Thread.sleep(100)
+                logger.debug { "Imported coin: ${item.type.title} (numistaId=$numistaId, year=$year, mint=$mintMark)" }
             } catch (e: Exception) {
                 failed++
                 val errorMsg = "Failed to import '${item.type.title}' (numistaId=$numistaId): ${e.message}"
