@@ -33,4 +33,9 @@ interface CoinRepositoryAdapter {
      * Finds all active coins plus coins deleted after the given cutoff time.
      */
     fun findAllIncludingDeletedAfter(cutoff: ZonedDateTime): List<Coin>
+
+    /**
+     * Checks if an active coin with the given Numista ID exists.
+     */
+    fun existsByNumistaId(numistaId: String): Boolean
 }

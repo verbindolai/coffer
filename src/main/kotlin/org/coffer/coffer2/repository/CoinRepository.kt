@@ -23,4 +23,6 @@ interface CoinRepository : JpaRepository<CoinEntity, UUID>, JpaSpecificationExec
     fun existsByIdAndDeletedAtIsNull(id: UUID): Boolean
 
     fun findByDeletedAtIsNullOrDeletedAtAfter(cutoff: ZonedDateTime): List<CoinEntity>
+
+    fun existsByNumistaIdAndDeletedAtIsNull(numistaId: String): Boolean
 }

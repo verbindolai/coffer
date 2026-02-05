@@ -55,6 +55,10 @@ class CoinRepositoryAdapterImpl(
         return coinRepository.findByDeletedAtIsNullOrDeletedAtAfter(cutoff).map { it.toCoin() }
     }
 
+    override fun existsByNumistaId(numistaId: String): Boolean {
+        return coinRepository.existsByNumistaIdAndDeletedAtIsNull(numistaId)
+    }
+
     private fun buildSpecification(query: CoinSearchQuery): Specification<CoinEntity> {
         val specs = mutableListOf<Specification<CoinEntity>>()
 
