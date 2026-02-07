@@ -124,6 +124,9 @@ data class GroupedCoinSearchResponse(
     @Schema(description = "Total number of individual coins matching the query")
     val totalCoinCount: Long,
 
+    @Schema(description = "Total quantity across all coins (sum of all coin quantities)")
+    val totalQuantityCount: Long,
+
     @Schema(description = "Current page number (0-based)")
     val page: Int,
 

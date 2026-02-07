@@ -78,15 +78,16 @@ class CoinService(
 
     @Transactional(readOnly = true)
     fun searchCoinsGrouped(query: CoinSearchQuery, pageable: Pageable): GroupedCoinSearchResponse {
-        val (groups, totalGroups, totalCoinCount) = coinRepository.searchGrouped(query, pageable)
+        val result = coinRepository.searchGrouped(query, pageable)
         val totalPages = if (pageable.pageSize > 0) {
-            ((totalGroups + pageable.pageSize - 1) / pageable.pageSize).toInt()
+            ((result.totalGroups + pageable.pageSize - 1) / pageable.pageSize).toInt()
         } else 1
 
         return GroupedCoinSearchResponse(
-            groups = groups.map { CoinGroupResponse.fromCoins(it) },
-            totalGroups = totalGroups,
-            totalCoinCount = totalCoinCount,
+            groups = result.groups.map { CoinGroupResponse.fromCoins(it) },
+            totalGroups = result.totalGroups,
+            totalCoinCount = result.totalCoinCount,
+            totalQuantityCount = result.totalQuantityCount,
             page = pageable.pageNumber,
             size = pageable.pageSize,
             totalPages = totalPages,

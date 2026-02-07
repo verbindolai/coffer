@@ -2,6 +2,7 @@ package org.coffer.coffer2.repository
 
 import org.coffer.coffer2.api.CoinSearchQuery
 import org.coffer.coffer2.application.CoinRepositoryAdapter
+import org.coffer.coffer2.application.GroupedSearchResult
 import org.coffer.coffer2.domain.coin.Coin
 import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.springframework.data.domain.Page
@@ -59,7 +60,7 @@ class CoinRepositoryAdapterImpl(
         return coinRepository.existsByNumistaIdAndDeletedAtIsNull(numistaId)
     }
 
-    override fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): Triple<List<List<Coin>>, Long, Long> {
+    override fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): GroupedSearchResult {
         val spec = buildSpecification(query)
         val allCoins = coinRepository.findAll(spec).map { it.toCoin() }
 
@@ -72,11 +73,12 @@ class CoinRepositoryAdapterImpl(
 
         val totalGroups = allGroups.size.toLong()
         val totalCoinCount = allCoins.size.toLong()
+        val totalQuantityCount = allCoins.sumOf { it.quantity }.toLong()
         val start = (pageable.pageNumber * pageable.pageSize).coerceAtMost(allGroups.size)
         val end = (start + pageable.pageSize).coerceAtMost(allGroups.size)
         val pageContent = allGroups.subList(start, end)
 
-        return Triple(pageContent, totalGroups, totalCoinCount)
+        return GroupedSearchResult(pageContent, totalGroups, totalCoinCount, totalQuantityCount)
     }
 
     override fun findByNumistaId(numistaId: String): List<Coin> {

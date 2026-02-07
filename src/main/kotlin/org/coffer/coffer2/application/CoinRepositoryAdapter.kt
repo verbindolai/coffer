@@ -43,10 +43,17 @@ interface CoinRepositoryAdapter {
      * Searches coins and groups results by numistaId.
      * Coins without a numistaId are returned as standalone groups of 1.
      */
-    fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): Triple<List<List<Coin>>, Long, Long>
+    fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): GroupedSearchResult
 
     /**
      * Finds all active coins with the given Numista type ID.
      */
     fun findByNumistaId(numistaId: String): List<Coin>
 }
+
+data class GroupedSearchResult(
+    val groups: List<List<Coin>>,
+    val totalGroups: Long,
+    val totalCoinCount: Long,
+    val totalQuantityCount: Long,
+)
