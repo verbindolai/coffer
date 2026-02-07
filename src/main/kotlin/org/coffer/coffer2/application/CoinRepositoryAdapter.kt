@@ -38,4 +38,15 @@ interface CoinRepositoryAdapter {
      * Checks if an active coin with the given Numista ID exists.
      */
     fun existsByNumistaId(numistaId: String): Boolean
+
+    /**
+     * Searches coins and groups results by numistaId.
+     * Coins without a numistaId are returned as standalone groups of 1.
+     */
+    fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): Triple<List<List<Coin>>, Long, Long>
+
+    /**
+     * Finds all active coins with the given Numista type ID.
+     */
+    fun findByNumistaId(numistaId: String): List<Coin>
 }

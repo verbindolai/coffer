@@ -15,6 +15,8 @@ import org.coffer.coffer2.domain.coin.UpdateCoinCommand
 import org.coffer.coffer2.domain.coinimage.ImageUploadCommand
 import org.coffer.coffer2.domain.exception.CoinNotFoundException
 import org.springframework.context.ApplicationEventPublisher
+import org.coffer.coffer2.api.CoinGroupResponse
+import org.coffer.coffer2.api.GroupedCoinSearchResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -72,6 +74,28 @@ class CoinService(
     @Transactional(readOnly = true)
     fun searchCoins(query: CoinSearchQuery, pageable: Pageable): Page<Coin> {
         return coinRepository.search(query, pageable)
+    }
+
+    @Transactional(readOnly = true)
+    fun searchCoinsGrouped(query: CoinSearchQuery, pageable: Pageable): GroupedCoinSearchResponse {
+        val (groups, totalGroups, totalCoinCount) = coinRepository.searchGrouped(query, pageable)
+        val totalPages = if (pageable.pageSize > 0) {
+            ((totalGroups + pageable.pageSize - 1) / pageable.pageSize).toInt()
+        } else 1
+
+        return GroupedCoinSearchResponse(
+            groups = groups.map { CoinGroupResponse.fromCoins(it) },
+            totalGroups = totalGroups,
+            totalCoinCount = totalCoinCount,
+            page = pageable.pageNumber,
+            size = pageable.pageSize,
+            totalPages = totalPages,
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getCoinsByNumistaId(numistaId: String): List<Coin> {
+        return coinRepository.findByNumistaId(numistaId)
     }
 
     @Transactional(readOnly = true)

@@ -59,6 +59,31 @@ class CoinRepositoryAdapterImpl(
         return coinRepository.existsByNumistaIdAndDeletedAtIsNull(numistaId)
     }
 
+    override fun searchGrouped(query: CoinSearchQuery, pageable: Pageable): Triple<List<List<Coin>>, Long, Long> {
+        val spec = buildSpecification(query)
+        val allCoins = coinRepository.findAll(spec).map { it.toCoin() }
+
+        val (withNumistaId, withoutNumistaId) = allCoins.partition { it.numistaId != null }
+        val groupedByType = withNumistaId.groupBy { it.numistaId!! }.values.toList()
+        val standaloneGroups = withoutNumistaId.map { listOf(it) }
+
+        val allGroups = (groupedByType + standaloneGroups)
+            .sortedByDescending { group -> group.minOf { it.createdAt } }
+
+        val totalGroups = allGroups.size.toLong()
+        val totalCoinCount = allCoins.size.toLong()
+        val start = (pageable.pageNumber * pageable.pageSize).coerceAtMost(allGroups.size)
+        val end = (start + pageable.pageSize).coerceAtMost(allGroups.size)
+        val pageContent = allGroups.subList(start, end)
+
+        return Triple(pageContent, totalGroups, totalCoinCount)
+    }
+
+    override fun findByNumistaId(numistaId: String): List<Coin> {
+        val spec = Specification.where(deletedAtIsNull()).and(numistaIdEquals(numistaId))
+        return coinRepository.findAll(spec).map { it.toCoin() }
+    }
+
     private fun buildSpecification(query: CoinSearchQuery): Specification<CoinEntity> {
         val specs = mutableListOf<Specification<CoinEntity>>()
 

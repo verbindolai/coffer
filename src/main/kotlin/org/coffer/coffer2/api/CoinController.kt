@@ -193,6 +193,83 @@ class CoinController(
         return ResponseEntity.ok(coins.map { CoinResponse.from(it) })
     }
 
+    @GetMapping("/grouped")
+    @Operation(summary = "Search coins grouped by type", description = "Search and filter coins, grouping results by Numista type ID. Coins without a Numista ID appear as standalone entries.")
+    @ApiResponse(responseCode = "200", description = "Grouped search results returned successfully")
+    fun searchCoinsGrouped(
+        @Parameter(description = "Filter by issuer country code (ISO 3166-1 alpha-2)")
+        @RequestParam(required = false) country: String?,
+
+        @Parameter(description = "Filter by denomination value")
+        @RequestParam(required = false) denomination: String?,
+
+        @Parameter(description = "Filter by coin grade")
+        @RequestParam(required = false) grade: CoinGrade?,
+
+        @Parameter(description = "Filter by coin type")
+        @RequestParam(required = false) coinType: CoinType?,
+
+        @Parameter(description = "Filter by minimum year of minting")
+        @RequestParam(required = false) yearFrom: Int?,
+
+        @Parameter(description = "Filter by maximum year of minting")
+        @RequestParam(required = false) yearTo: Int?,
+
+        @Parameter(description = "Filter by metal type")
+        @RequestParam(required = false) metalType: MetalType?,
+
+        @Parameter(description = "Filter by coin shape")
+        @RequestParam(required = false) shape: CoinShape?,
+
+        @Parameter(description = "Filter by currency code (ISO 4217)")
+        @RequestParam(required = false) currency: String?,
+
+        @Parameter(description = "Search by title (partial match)")
+        @RequestParam(required = false) title: String?,
+
+        @Parameter(description = "Filter by Numista ID")
+        @RequestParam(required = false) numistaId: String?,
+
+        @PageableDefault(size = 20, sort = ["createdAt"], direction = Sort.Direction.DESC)
+        pageable: Pageable
+    ): ResponseEntity<GroupedCoinSearchResponse> {
+        val query = CoinSearchQuery(
+            country = country,
+            denomination = denomination,
+            grade = grade,
+            coinType = coinType,
+            yearFrom = yearFrom,
+            yearTo = yearTo,
+            metalType = metalType,
+            shape = shape,
+            currency = currency,
+            title = title,
+            numistaId = numistaId
+        )
+
+        val result = coinService.searchCoinsGrouped(query, pageable)
+        return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/type/{numistaId}")
+    @Operation(summary = "Get coins by type", description = "Retrieve all coins sharing the same Numista type ID")
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Coins returned successfully"),
+            ApiResponse(responseCode = "404", description = "No coins found for this type")
+        ]
+    )
+    fun getCoinsByType(
+        @Parameter(description = "Numista type ID", example = "12345")
+        @PathVariable numistaId: String
+    ): ResponseEntity<List<CoinResponse>> {
+        val coins = coinService.getCoinsByNumistaId(numistaId)
+        if (coins.isEmpty()) {
+            return ResponseEntity.notFound().build()
+        }
+        return ResponseEntity.ok(coins.map { CoinResponse.from(it) })
+    }
+
     @GetMapping("/{coinId}/images")
     @Operation(summary = "Get coin images", description = "Retrieve all images for a specific coin")
     @ApiResponse(responseCode = "200", description = "List of coin images returned successfully")
