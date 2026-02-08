@@ -15,15 +15,15 @@ class NumistaImportController(
 ) {
 
     @GetMapping("/auth-url")
-    fun getAuthUrl(@org.springframework.web.bind.annotation.RequestParam redirectUri: String): NumistaAuthUrlResponse {
+    fun getAuthUrl(): NumistaAuthUrlResponse {
         val state = UUID.randomUUID().toString()
-        val url = importService.getAuthorizationUrl(state, redirectUri)
+        val url = importService.getAuthorizationUrl(state)
         return NumistaAuthUrlResponse(url)
     }
 
     @PostMapping("/callback")
     fun importCollection(@RequestBody request: NumistaImportCallbackRequest): NumistaImportResultResponse {
-        val result = importService.importCollection(request.code, request.redirectUri)
+        val result = importService.importCollection(request.code)
         return NumistaImportResultResponse(
             imported = result.imported,
             skipped = result.skipped,

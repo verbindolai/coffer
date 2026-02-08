@@ -6,6 +6,7 @@ import org.coffer.coffer2.application.CoinService
 import org.coffer.coffer2.application.CompositionParser
 import org.coffer.coffer2.application.CurrencyDeriver
 import org.coffer.coffer2.application.IssuerCodeMapper
+import org.coffer.coffer2.config.CofferProperties
 import org.coffer.coffer2.config.NumistaOAuthProperties
 import org.coffer.coffer2.domain.coin.CoinGrade
 import org.coffer.coffer2.domain.coin.CoinShape
@@ -29,20 +30,22 @@ class NumistaImportService(
     private val coinService: CoinService,
     private val coinRepository: CoinRepositoryAdapter,
     private val compositionParser: CompositionParser,
-    private val properties: NumistaOAuthProperties,
+    private val numistaProperties: NumistaOAuthProperties,
+    private val cofferProperties: CofferProperties,
 ) {
     private val logger = KotlinLogging.logger {}
+    private val redirectUri = "${cofferProperties.baseUrlFrontend}/import/numista/callback"
 
-    fun getAuthorizationUrl(state: String, redirectUri: String): String {
+    fun getAuthorizationUrl(state: String): String {
         return "https://en.numista.com/api/oauth_authorize.php" +
             "?response_type=code" +
-            "&client_id=${properties.clientId}" +
+            "&client_id=${numistaProperties.clientId}" +
             "&redirect_uri=$redirectUri" +
             "&scope=view_collection" +
             "&state=$state"
     }
 
-    fun importCollection(code: String, redirectUri: String): NumistaImportResult {
+    fun importCollection(code: String): NumistaImportResult {
         logger.info { "Starting Numista collection import" }
 
         val tokenResponse = numistaOAuthClient.exchangeCode(code, redirectUri)
