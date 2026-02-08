@@ -92,8 +92,8 @@ Key environment variables:
 
 ## Related Projects
 
-- [coffer2-ui](https://github.com/YOUR_USERNAME/coffer2-ui) - Angular frontend
-- [coffer-deploy](https://github.com/YOUR_USERNAME/coffer-deploy) - Docker deployment
+- [coffer-ui](https://github.com/verbindolai/coffer-ui) - Angular frontend
+- [coffer-deploy](https://github.com/verbindolai/coffer-deploy) - Docker deployment
 
 ## License
 
