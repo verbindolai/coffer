@@ -77,19 +77,6 @@ Once running, explore the API:
 - **OpenAPI JSON:** http://localhost:8080/v3/api-docs
 - **OpenAPI YAML:** http://localhost:8080/v3/api-docs.yaml
 
-### Core Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/v1/coins` | List coins (paginated, filterable) |
-| `POST /api/v1/coins` | Create a new coin |
-| `GET /api/v1/coins/{id}` | Get coin details |
-| `PUT /api/v1/coins/{id}` | Update a coin |
-| `DELETE /api/v1/coins/{id}` | Delete a coin |
-| `GET /api/v1/coins/{id}/valuation` | Get coin valuation history |
-| `GET /api/v1/portfolio/valuation` | Get portfolio valuation |
-| `GET /api/v1/catalog/search` | Search Numista catalog |
-
 ## Configuration
 
 Key environment variables:
@@ -102,17 +89,6 @@ Key environment variables:
 | `NUMISTA_API_KEY` | - | Numista API key for catalog features |
 | `COFFER_IMAGES_PATH` | `./data/images` | Path for coin image storage |
 
-## Project Structure
-
-```
-src/main/kotlin/org/coffer/coffer2/
-├── api/            # REST controllers
-├── application/    # Use cases and services
-├── domain/         # Business logic and entities
-├── repository/     # Data access (JPA repositories)
-├── remote/         # External API clients (Numista, metal prices)
-└── schedule/       # Scheduled tasks (quotes, snapshots)
-```
 
 ## Related Projects
 
