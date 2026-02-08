@@ -55,7 +55,6 @@ numista:
     base-url: https://api.numista.com
     key: ${NUMISTA_API_KEY}
     client-id: ${NUMISTA_CLIENT_ID}
-    redirect-uri: ${NUMISTA_REDIRECT_URI:http://localhost:4200/import/numista/callback}
 
 # Swissquote API configuration
 swissquote:

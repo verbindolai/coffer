@@ -33,11 +33,11 @@ class NumistaImportService(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    fun getAuthorizationUrl(state: String): String {
+    fun getAuthorizationUrl(state: String, redirectUri: String): String {
         return "https://en.numista.com/api/oauth_authorize.php" +
             "?response_type=code" +
             "&client_id=${properties.clientId}" +
-            "&redirect_uri=${properties.redirectUri}" +
+            "&redirect_uri=$redirectUri" +
             "&scope=view_collection" +
             "&state=$state"
     }

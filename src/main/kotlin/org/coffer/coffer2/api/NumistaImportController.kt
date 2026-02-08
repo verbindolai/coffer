@@ -15,9 +15,9 @@ class NumistaImportController(
 ) {
 
     @GetMapping("/auth-url")
-    fun getAuthUrl(): NumistaAuthUrlResponse {
+    fun getAuthUrl(@org.springframework.web.bind.annotation.RequestParam redirectUri: String): NumistaAuthUrlResponse {
         val state = UUID.randomUUID().toString()
-        val url = importService.getAuthorizationUrl(state)
+        val url = importService.getAuthorizationUrl(state, redirectUri)
         return NumistaAuthUrlResponse(url)
     }
 

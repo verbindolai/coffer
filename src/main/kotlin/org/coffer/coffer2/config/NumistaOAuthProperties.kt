@@ -7,5 +7,4 @@ data class NumistaOAuthProperties(
     val baseUrl: String,
     val key: String,
     val clientId: String,
-    val redirectUri: String,
 )
