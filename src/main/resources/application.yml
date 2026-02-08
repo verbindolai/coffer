@@ -3,9 +3,9 @@ spring:
     name: coffer
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coffer2}
-    username: ${DB_USERNAME:coffer2}
-    password: ${DB_PASSWORD:coffer2}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coffer}
+    username: ${DB_USERNAME:coffer}
+    password: ${DB_PASSWORD:coffer}
     driver-class-name: org.postgresql.Driver
 
   liquibase:
