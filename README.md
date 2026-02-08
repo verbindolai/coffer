@@ -31,13 +31,13 @@
 
 | Layer | Technology |
 |-------|------------|
-| **Framework** | Spring Boot 4.0 |
-| **Language** | Kotlin 2.2 |
-| **Database** | PostgreSQL 16 |
+| **Framework** | Spring Boot |
+| **Language** | Kotlin |
+| **Database** | PostgreSQL |
 | **Migrations** | Liquibase |
-| **API Docs** | OpenAPI 3 / Swagger UI |
+| **API Docs** | OpenAPI / Swagger UI |
 | **Build** | Gradle (Kotlin DSL) |
-| **Runtime** | Java 21 |
+| **Runtime** | Java |
 
 ## Getting Started
 
@@ -51,7 +51,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/coffer2.git
+git clone https://github.com/verbindolai/coffer2.git
 cd coffer2
 
 # Configure database connection
@@ -67,7 +67,7 @@ The API will be available at `http://localhost:8080`.
 
 ### Using Docker
 
-For a complete deployment with frontend and database, see [coffer-deploy](https://github.com/YOUR_USERNAME/coffer-deploy).
+For a complete deployment with frontend and database, see [coffer-deploy](https://github.com/verbindolai/coffer-deploy).
 
 ## API Documentation
 
@@ -92,9 +92,9 @@ Key environment variables:
 
 ## Related Projects
 
-- [coffer2-ui](https://github.com/YOUR_USERNAME/coffer2-ui) - Angular frontend
-- [coffer-deploy](https://github.com/YOUR_USERNAME/coffer-deploy) - Docker deployment
+- [coffer2-ui](https://github.com/verbindolai/coffer2-ui) - Angular frontend
+- [coffer-deploy](https://github.com/verbindolai/coffer-deploy) - Docker deployment
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+AGPL-3.0 License - See [LICENSE](LICENSE) for details.
