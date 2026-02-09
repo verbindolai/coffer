@@ -2,10 +2,14 @@
   <img src="https://raw.githubusercontent.com/verbindolai/coffer-ui/refs/heads/master/public/favicon.svg" width="80" alt="Coffer Logo">
 </p>
 
-<h1 align="center">Coffer Backend</h1>
+<h1 align="center">Coffer</h1>
 
-<p align="center">
-  <strong>REST API for the Coffer Coin Collection Manager</strong>
+<p align="center">  
+  <strong>Track your coins.</strong>
+  <strong>Know their worth.</strong>
+  
+  Self-hosted coin collection manager with real-time precious metal valuations, portfolio analytics, and Numista catalog integration.
+
 </p>
 
 <p align="center">
