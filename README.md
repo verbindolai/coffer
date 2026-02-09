@@ -10,16 +10,11 @@
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#demo">Demo</a> •
   <a href="#tech-stack">Tech Stack</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="#api-documentation">API Docs</a> •
   <a href="#configuration">Configuration</a>
 </p>
-
----
-
-## Demo
 
 <p align="center">
   <img src="docs/demo.gif" alt="Coffer demo" width="100%">
