@@ -90,6 +90,10 @@ Key environment variables:
 | `COFFER_IMAGES_PATH` | `./data/images` | Path for coin image storage |
 
 
+## Contributing
+
+Interested in contributing? See the [Contributing Guide](CONTRIBUTING.md) for setup instructions and development workflow.
+
 ## Related Projects
 
 - [coffer-ui](https://github.com/verbindolai/coffer-ui) - Angular frontend
